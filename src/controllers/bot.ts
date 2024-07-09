@@ -1,129 +1,157 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { openDb, initializeDb } from '../models/database';
+import {
+  createGroup,
+  findGroupByCode,
+  createUser,
+  findUserByTelegramId,
+  addUserToGroup,
+  suggestMovie,
+  findMovieById,
+  voteForMovie,
+  listMovies,
+  markMovieAsWatched,
+} from '../models/moviesModel';
+import texts from '../texts.json';
 
 const token = 'YOUR_BOT_TOKEN';
 const bot = new TelegramBot(token, { polling: true });
 
-initializeDb();
-
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, 'Привет! Я бот для выбора фильма. Используйте /help для получения списка команд.');
+  bot.sendMessage(msg.chat.id, texts.start);
 });
 
 bot.onText(/\/help/, (msg) => {
-  bot.sendMessage(msg.chat.id, 'Список команд:\n'
-    + '/create_group - создать группу\n'
-    + '/join_group <код> - присоединиться к группе\n'
-    + '/suggest_movie <название фильма> - предложить фильм\n'
-    + '/vote <номер фильма> - проголосовать за фильм\n'
-    + '/list_movies - показать список фильмов\n'
-    + '/watched <номер фильма> - отметить фильм как просмотренный\n'
-    + '/veto <номер фильма> - наложить вето на фильм');
+  bot.sendMessage(msg.chat.id, texts.help);
 });
 
 bot.onText(/\/create_group/, async (msg) => {
   const chatId = msg.chat.id;
-  const db = await openDb();
-  const result = await db.run(`INSERT INTO groups (code) VALUES (?)`, [String(chatId)]);
-  bot.sendMessage(chatId, `Группа создана! Код для присоединения: ${chatId}`);
+  await createGroup(String(chatId));
+  bot.sendMessage(chatId, `${texts.group_created} ${chatId}`);
 });
 
 bot.onText(/\/join_group (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
+
+  if (match === null) {
+    bot.sendMessage(chatId, texts.group_not_found);
+    return;
+  }
+
   const groupCode = match[1];
 
-  const db = await openDb();
-  const group = await db.get(`SELECT id FROM groups WHERE code = ?`, [groupCode]);
+  const group = await findGroupByCode(groupCode);
   if (group) {
-    await db.run(`INSERT OR IGNORE INTO users (telegram_id) VALUES (?)`, [chatId]);
-    const user = await db.get(`SELECT id FROM users WHERE telegram_id = ?`, [chatId]);
-    await db.run(`INSERT INTO group_users (group_id, user_id) VALUES (?, ?)`, [group.id, user.id]);
-    bot.sendMessage(chatId, 'Вы присоединились к группе!');
+    await createUser(chatId);
+    const user = await findUserByTelegramId(chatId);
+    await addUserToGroup(group.id, user.id);
+    bot.sendMessage(chatId, texts.joined_group);
   } else {
-    bot.sendMessage(chatId, 'Группа с таким кодом не найдена.');
+    bot.sendMessage(chatId, texts.group_not_found);
   }
 });
 
 bot.onText(/\/suggest_movie (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
+
+  if (match === null) {
+    bot.sendMessage(chatId, texts.movie_not_found);
+    return;
+  }
+
   const movieName = match[1];
 
-  const db = await openDb();
-  await db.run(`INSERT OR IGNORE INTO users (telegram_id) VALUES (?)`, [chatId]);
-  const user = await db.get(`SELECT id FROM users WHERE telegram_id = ?`, [chatId]);
-  const groupUser = await db.get(`SELECT group_id FROM group_users WHERE user_id = ?`, [user.id]);
-  
+  await createUser(chatId);
+  const user = await findUserByTelegramId(chatId);
+  const groupUser = await findGroupByCode(String(chatId));
+
   if (groupUser) {
-    const link = `https://www.kinopoisk.ru/index.php?kp_query=${encodeURIComponent(movieName)}`;
-    await db.run(`INSERT INTO movies (name, suggested_by, group_id, link) VALUES (?, ?, ?, ?)`, [movieName, user.id, groupUser.group_id, link]);
-    bot.sendMessage(chatId, `Фильм "${movieName}" предложен!`);
+    const link = `https://www.kinopoisk.ru/index.php?kp_query=${encodeURIComponent(
+      movieName,
+    )}`;
+    await suggestMovie(movieName, user.id, groupUser.id, link);
+    bot.sendMessage(chatId, `${texts.movie_suggested} "${movieName}"`);
   } else {
-    bot.sendMessage(chatId, 'Вы не состоите ни в одной группе.');
+    bot.sendMessage(chatId, texts.not_in_group);
   }
 });
 
 bot.onText(/\/vote (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
+
+  if (match === null) {
+    bot.sendMessage(chatId, texts.movie_not_found);
+    return;
+  }
+
   const movieId = match[1];
 
-  const db = await openDb();
-  const movie = await db.get(`SELECT name FROM movies WHERE id = ?`, [movieId]);
+  const movie = await findMovieById(movieId);
 
   if (movie) {
-    await db.run(`UPDATE movies SET votes = votes + 1 WHERE id = ?`, [movieId]);
-    bot.sendMessage(chatId, `Вы проголосовали за фильм "${movie.name}"!`);
+    await voteForMovie(movieId);
+    bot.sendMessage(chatId, `${texts.voted} "${movie.name}"`);
   } else {
-    bot.sendMessage(chatId, 'Фильм с таким номером не найден.');
+    bot.sendMessage(chatId, texts.movie_not_found);
   }
 });
 
 bot.onText(/\/list_movies/, async (msg) => {
   const chatId = msg.chat.id;
-  const db = await openDb();
-  const movies = await db.all(`SELECT id, name, suggested_by, votes, link FROM movies`);
+  const movies = await listMovies();
 
   if (movies.length > 0) {
-    let movieList = 'Список фильмов:\n';
+    let movieList = texts.movie_list;
     for (const movie of movies) {
       movieList += `${movie.id}. ${movie.name} (голоса: ${movie.votes}) - ${movie.link}\n`;
     }
     bot.sendMessage(chatId, movieList);
   } else {
-    bot.sendMessage(chatId, 'Список фильмов пуст.');
+    bot.sendMessage(chatId, texts.movie_list_empty);
   }
 });
 
 bot.onText(/\/watched (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
+
+  if (match === null) {
+    bot.sendMessage(chatId, texts.movie_not_found);
+    return;
+  }
+
   const movieId = match[1];
 
-  const db = await openDb();
-  const movie = await db.get(`SELECT name FROM movies WHERE id = ?`, [movieId]);
+  const movie = await findMovieById(movieId);
 
   if (movie) {
-    await db.run(`DELETE FROM movies WHERE id = ?`, [movieId]);
-    bot.sendMessage(chatId, `Фильм "${movie.name}" отмечен как просмотренный и удален из списка.`);
+    await markMovieAsWatched(movieId);
+    bot.sendMessage(chatId, `${texts.movie_watched} "${movie.name}"`);
   } else {
-    bot.sendMessage(chatId, 'Фильм с таким номером не найден.');
+    bot.sendMessage(chatId, texts.movie_not_found);
   }
 });
 
 bot.onText(/\/veto (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
+
+  if (match === null) {
+    bot.sendMessage(chatId, texts.movie_not_found);
+    return;
+  }
+
   const movieId = match[1];
 
-  const db = await openDb();
-  const movie = await db.get(`SELECT name, suggested_by FROM movies WHERE id = ?`, [movieId]);
+  const movie = await findMovieById(movieId);
 
   if (movie) {
-    const user = await db.get(`SELECT id FROM users WHERE telegram_id = ?`, [chatId]);
+    const user = await findUserByTelegramId(chatId);
     if (movie.suggested_by !== user.id) {
-      await db.run(`DELETE FROM movies WHERE id = ?`, [movieId]);
-      bot.sendMessage(chatId, `Фильм "${movie.name}" удален с вето.`);
+      await markMovieAsWatched(movieId);
+      bot.sendMessage(chatId, `${texts.vetoed} "${movie.name}"`);
     } else {
-      bot.sendMessage(chatId, 'Вы не можете наложить вето на свой же фильм.');
+      bot.sendMessage(chatId, texts.cannot_veto_own);
     }
   } else {
-    bot.sendMessage(chatId, 'Фильм с таким номером не найден.');
+    bot.sendMessage(chatId, texts.movie_not_found);
   }
 });

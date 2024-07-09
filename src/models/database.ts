@@ -1,15 +1,15 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 
-export async function openDb() {
+export async function openDb(filename: string = './database.db') {
   return open({
-    filename: './database.db',
-    driver: sqlite3.Database
+    filename,
+    driver: sqlite3.Database,
   });
 }
 
-export async function initializeDb() {
-  const db = await openDb();
+export async function initializeDb(filename: string = './database.db') {
+  const db = await openDb(filename);
   await db.exec(`
     CREATE TABLE IF NOT EXISTS groups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
