@@ -7,8 +7,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "resolveJsonModule": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist"],
+  "typeRoots": ["node_modules/@types"],
+  "types": ["node", "@types/node", "@types/jest", "@types/node-telegram-bot-api"]
 }
