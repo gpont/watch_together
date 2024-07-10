@@ -7,22 +7,31 @@ import {
   findUserByTelegramId,
   addUserToGroup,
   suggestMovie,
-  findMovieById,
-  voteForMovie,
-  listMovies,
-  markMovieAsWatched,
 } from '../models/moviesModel';
 import { initializeDb } from '../models/database';
+import { botHandlers } from './bot';
 
-// jest.mock('node-telegram-bot-api');
+jest.mock('node-telegram-bot-api');
 
 describe('Bot Commands', () => {
   const DATABASE_FILENAME = './test_database.db';
   let bot: TelegramBot;
+  const emitMsg = (msg: TelegramBot.Message) => {
+    const handler = botHandlers.find((handler) => {
+      if (!msg.text) {
+        return false;
+      }
+      return handler[0].test(msg.text);
+    });
+    if (!handler) {
+      return;
+    }
+    handler[1](bot)(msg, null);
+  };
 
   beforeAll(async () => {
+    bot = new TelegramBot('test_token', { polling: true });
     await initializeDb(DATABASE_FILENAME);
-    bot = new TelegramBot('YOUR_BOT_TOKEN', { polling: false });
   });
 
   afterAll(async () => {
@@ -39,8 +48,8 @@ describe('Bot Commands', () => {
       chat: { id: 123 },
       text: '/start',
     } as unknown as TelegramBot.Message;
-    // @ts-ignore
-    bot.emit('message', msg);
+
+    emitMsg(msg);
 
     expect(sendMessage).toHaveBeenCalledWith(
       123,
@@ -54,8 +63,8 @@ describe('Bot Commands', () => {
       chat: { id: 123 },
       text: '/help',
     } as unknown as TelegramBot.Message;
-    // @ts-ignore
-    bot.emit('message', msg);
+
+    emitMsg(msg);
 
     expect(sendMessage).toHaveBeenCalledWith(
       123,
@@ -69,9 +78,9 @@ describe('Bot Commands', () => {
       chat: { id: 123 },
       text: '/create_group',
     } as unknown as TelegramBot.Message;
-    await createGroup(String(msg.chat.id));
-    // @ts-ignore
-    bot.emit('message', msg);
+    await createGroup(String(msg.chat.id), DATABASE_FILENAME);
+
+    emitMsg(msg);
 
     const group = await findGroupByCode(String(msg.chat.id));
     expect(group).not.toBeNull();
@@ -87,12 +96,12 @@ describe('Bot Commands', () => {
       chat: { id: 123 },
       text: '/join_group 123',
     } as unknown as TelegramBot.Message;
-    await createGroup('123');
-    await createUser(msg.chat.id);
-    const user = await findUserByTelegramId(msg.chat.id);
-    await addUserToGroup(123, user.id);
-    // @ts-ignore
-    bot.emit('message', msg);
+    await createGroup('123', DATABASE_FILENAME);
+    await createUser(msg.chat.id, DATABASE_FILENAME);
+    const user = await findUserByTelegramId(msg.chat.id, DATABASE_FILENAME);
+    await addUserToGroup(123, user.id, DATABASE_FILENAME);
+
+    emitMsg(msg);
 
     const group = await findGroupByCode('123');
     expect(group).not.toBeNull();
@@ -108,12 +117,12 @@ describe('Bot Commands', () => {
       chat: { id: 123 },
       text: '/suggest_movie Inception',
     } as unknown as TelegramBot.Message;
-    await createGroup('123');
-    await createUser(msg.chat.id);
-    const user = await findUserByTelegramId(msg.chat.id);
-    await addUserToGroup(123, user.id);
-    // @ts-ignore
-    bot.emit('message', msg);
+    await createGroup('123', DATABASE_FILENAME);
+    await createUser(msg.chat.id, DATABASE_FILENAME);
+    const user = await findUserByTelegramId(msg.chat.id, DATABASE_FILENAME);
+    await addUserToGroup(123, user.id, DATABASE_FILENAME);
+
+    emitMsg(msg);
 
     const movie = await suggestMovie(
       'Inception',
@@ -128,5 +137,5 @@ describe('Bot Commands', () => {
     );
   });
 
-  // Добавьте другие тесты для команд, как в примере выше
+  // TODO add more tests for other bot commands
 });
