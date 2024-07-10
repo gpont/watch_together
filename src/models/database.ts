@@ -1,14 +1,14 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 
-export async function openDb(filename: string = './database.db') {
+export async function openDb(filename = './database.db') {
   return open({
     filename,
     driver: sqlite3.Database,
   });
 }
 
-export async function initializeDb(filename: string = './database.db') {
+export async function initializeDb(filename = './database.db') {
   const db = await openDb(filename);
   await db.exec(`
     CREATE TABLE IF NOT EXISTS groups (
