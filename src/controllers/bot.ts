@@ -1,3 +1,7 @@
+// Fix for error: node-telegram-bot-api
+// deprecated Automatic enabling of cancellation
+// of promises is deprecated In the future
+process.env.NTBA_FIX_319 = '1';
 import TelegramBot from 'node-telegram-bot-api';
 import {
   createGroup,
@@ -20,7 +24,8 @@ type THandler = (
 export const botHandlers: [RegExp, THandler][] = [
   [
     /\/start/,
-    (bot) => (msg) => {
+    (bot) => async (msg) => {
+      await createUser(msg.chat.id);
       bot.sendMessage(msg.chat.id, texts.start);
     },
   ],
@@ -52,7 +57,6 @@ export const botHandlers: [RegExp, THandler][] = [
 
       const group = await findGroupByCode(groupCode);
       if (group) {
-        await createUser(chatId);
         const user = await findUserByTelegramId(chatId);
         await addUserToGroup(group.id, user.id);
         bot.sendMessage(chatId, texts.joined_group);
