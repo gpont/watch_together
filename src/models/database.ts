@@ -1,6 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
-import { DATABASE_FILENAME } from './consts';
+import { DATABASE_FILENAME } from '../consts';
 
 export async function openDb() {
   return open({
@@ -18,7 +18,7 @@ export async function initializeDb() {
     );
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      telegram_id INTEGER UNIQUE
+      group_id INTEGER
     );
     CREATE TABLE IF NOT EXISTS movies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

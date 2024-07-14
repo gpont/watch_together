@@ -10,19 +10,16 @@ export async function findGroupByCode(code: string) {
   return db.get(`SELECT id FROM groups WHERE code = ?`, [code]);
 }
 
-export async function createUser(telegramId: number) {
+export async function createUser(groupId: number) {
   const db = await openDb();
-  await db.run(`INSERT OR IGNORE INTO users (telegram_id) VALUES (?)`, [
-    telegramId,
-  ]);
-  return findUserByTelegramId(telegramId);
-}
-
-export async function findUserByTelegramId(telegramId: number) {
-  const db = await openDb();
-  return db.get(`SELECT id, telegram_id FROM users WHERE telegram_id = ?`, [
-    telegramId,
-  ]);
+  const res = await db.run(
+    `INSERT OR IGNORE INTO users (group_id) VALUES (?)`,
+    [groupId],
+  );
+  if (!res.lastID) {
+    throw new Error(`Failed to create user. groupId: ${groupId}`);
+  }
+  return findUserById(res.lastID);
 }
 
 export async function addUserToGroup(groupId: number, userId: number) {
@@ -44,12 +41,15 @@ export async function suggestMovie(
     `INSERT INTO movies (name, suggested_by, group_id, link) VALUES (?, ?, ?, ?)`,
     [name, suggestedBy, groupId, link],
   );
-  return findMovieById(String(res.lastID));
+  return findMovieById(String(res.lastID), groupId);
 }
 
-export async function findMovieById(movieId: string) {
+export async function findMovieById(movieId: string, groupId: number) {
   const db = await openDb();
-  return db.get(`SELECT * FROM movies WHERE id = ?`, [movieId]);
+  return db.get(`SELECT * FROM movies WHERE id = ? AND group_id = ?`, [
+    movieId,
+    groupId,
+  ]);
 }
 
 export async function voteForMovie(movieId: string) {
@@ -69,5 +69,5 @@ export async function markMovieAsWatched(movieId: string) {
 
 export async function findUserById(userId: number) {
   const db = await openDb();
-  return db.get(`SELECT id FROM users WHERE id = ?`, [userId]);
+  return db.get(`SELECT * FROM users WHERE id = ?`, [userId]);
 }

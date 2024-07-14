@@ -7,7 +7,6 @@ import {
   createGroup,
   findGroupByCode,
   createUser,
-  findUserByTelegramId,
   addUserToGroup,
   suggestMovie,
   findMovieById,
@@ -16,6 +15,7 @@ import {
   markMovieAsWatched,
 } from '../models/moviesModel';
 import texts from '../texts.json';
+import { getKinopoiskUrl } from './helpers';
 
 type THandler = (
   bot: TelegramBot,
@@ -53,12 +53,17 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const groupCode = match[1];
+      const userId = msg.from?.id;
+      if (!userId) {
+        bot.sendMessage(chatId, texts.user_not_found);
+        return;
+      }
+
+      const groupCode = match.slice(1).join(' ');
 
       const group = await findGroupByCode(groupCode);
       if (group) {
-        const user = await findUserByTelegramId(chatId);
-        await addUserToGroup(group.id, user.id);
+        await addUserToGroup(group.id, userId);
         bot.sendMessage(chatId, texts.joined_group);
       } else {
         bot.sendMessage(chatId, texts.group_not_found);
@@ -75,16 +80,13 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const movieName = match[1];
+      const movieName = match.slice(1).join(' ');
 
-      await createUser(chatId);
-      const user = await findUserByTelegramId(chatId);
+      const user = await createUser(chatId);
       const groupUser = await findGroupByCode(String(chatId));
 
       if (groupUser) {
-        const link = `https://www.kinopoisk.ru/index.php?kp_query=${encodeURIComponent(
-          movieName,
-        )}`;
+        const link = getKinopoiskUrl(movieName);
         await suggestMovie(movieName, user.id, groupUser.id, link);
         bot.sendMessage(chatId, `${texts.movie_suggested} "${movieName}"`);
       } else {
@@ -102,9 +104,9 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const movieId = match[1];
+      const movieId = match.slice(1).join(' ');
 
-      const movie = await findMovieById(movieId);
+      const movie = await findMovieById(movieId, chatId);
 
       if (movie) {
         await voteForMovie(movieId);
@@ -141,9 +143,9 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const movieId = match[1];
+      const movieId = match.slice(1).join(' ');
 
-      const movie = await findMovieById(movieId);
+      const movie = await findMovieById(movieId, chatId);
 
       if (movie) {
         await markMovieAsWatched(movieId);
@@ -163,13 +165,18 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const movieId = match[1];
+      const userId = msg.from?.id;
+      if (!userId) {
+        bot.sendMessage(chatId, texts.user_not_found);
+        return;
+      }
 
-      const movie = await findMovieById(movieId);
+      const movieId = match.slice(1).join(' ');
+
+      const movie = await findMovieById(movieId, chatId);
 
       if (movie) {
-        const user = await findUserByTelegramId(chatId);
-        if (movie.suggested_by !== user.id) {
+        if (movie.suggested_by !== userId) {
           await markMovieAsWatched(movieId);
           bot.sendMessage(chatId, `${texts.vetoed} "${movie.name}"`);
         } else {
