@@ -8,10 +8,10 @@ import {
   createGroup,
   findGroupByCode,
   createUser,
-  findUserByTelegramId,
   addUserToGroup,
   suggestMovie,
   findMovieById,
+  findUserById,
 } from '../models/moviesModel';
 import { initializeDb } from '../models/database';
 import { botHandlers } from './bot';
@@ -19,8 +19,9 @@ import { botHandlers } from './bot';
 const DATABASE_FILENAME = './test_database.db';
 
 jest.mock('node-telegram-bot-api');
-jest.mock('../models/consts.ts', () => ({
+jest.mock('../consts.ts', () => ({
   DATABASE_FILENAME: './test_database.db',
+  KINOPOISK_URL: 'https://www.kinopoisk.ru/index.php?kp_query=',
 }));
 
 describe('Bot Commands', () => {
@@ -61,13 +62,13 @@ describe('Bot Commands', () => {
 
     await emitMsg(msg);
 
-    const user = await findUserByTelegramId(msg.chat.id);
+    const user = await findUserById(1);
 
     expect(sendMessage).toHaveBeenCalledWith(
       msg.chat.id,
       expect.stringContaining('Привет!'),
     );
-    expect(user.telegram_id).toBe(msg.chat.id);
+    expect(user.group_id).toBe(msg.chat.id);
   });
 
   it('help command should send help message', async () => {
@@ -106,12 +107,14 @@ describe('Bot Commands', () => {
 
   it('join_group command should add user to group', async () => {
     const sendMessage = jest.spyOn(bot, 'sendMessage');
+    const chatId = 125;
+    await createGroup(String(chatId));
+    const user = await createUser(chatId);
     const msg = {
-      chat: { id: 125 },
-      text: '/join_group 125',
+      chat: { id: chatId },
+      text: `/join_group ${chatId}`,
+      from: { id: 1 },
     } as unknown as TelegramBot.Message;
-    await createGroup(String(msg.chat.id));
-    const user = await createUser(msg.chat.id);
     await addUserToGroup(msg.chat.id, user.id);
 
     await emitMsg(msg);
@@ -152,7 +155,7 @@ describe('Bot Commands', () => {
   it('vote command should vote for a movie', async () => {
     const sendMessage = jest.spyOn(bot, 'sendMessage');
     const msg = {
-      chat: { id: 128 },
+      chat: { id: 127 },
       text: '/vote 1',
     } as unknown as TelegramBot.Message;
     await createGroup(String(msg.chat.id));
@@ -165,21 +168,24 @@ describe('Bot Commands', () => {
       'https://www.kinopoisk.ru/index.php?kp_query=Inception',
     );
 
-    await emitMsg(msg);
+    await emitMsg({
+      ...msg,
+      text: `/vote ${insertedMovie.id}`,
+    });
 
-    const movie = await findMovieById(insertedMovie.id);
+    const movie = await findMovieById(insertedMovie.id, msg.chat.id);
 
     expect(movie.votes).toBe(1);
     expect(sendMessage).toHaveBeenCalledWith(
       msg.chat.id,
-      expect.stringContaining('Ваш голос учтен!'),
+      expect.stringContaining('Вы проголосовали за фильм!'),
     );
   });
 
   it('list_movies command should list movies', async () => {
     const sendMessage = jest.spyOn(bot, 'sendMessage');
     const msg = {
-      chat: { id: 129 },
+      chat: { id: 128 },
       text: '/list_movies',
     } as unknown as TelegramBot.Message;
     await createGroup(String(msg.chat.id));
@@ -195,28 +201,65 @@ describe('Bot Commands', () => {
     await emitMsg(msg);
     expect(sendMessage).toHaveBeenCalledWith(
       msg.chat.id,
-      expect.stringContaining('Inception'),
+      expect.stringContaining(movie.name),
     );
   });
 
-  it('veto command should veto a movie', async () => {
+  it('veto command should not veto on own movie', async () => {
     const sendMessage = jest.spyOn(bot, 'sendMessage');
+    const chatId = 129;
+    await createGroup(String(chatId));
+    const user = await createUser(chatId);
     const msg = {
-      chat: { id: 127 },
+      chat: { id: chatId },
       text: '/veto 1',
+      from: { id: user.id },
     } as unknown as TelegramBot.Message;
-    await createGroup(String(msg.chat.id));
-    const user = await createUser(msg.chat.id);
     await addUserToGroup(msg.chat.id, user.id);
-
-    await emitMsg(msg);
-
     const movie = await suggestMovie(
       'Inception',
       user.id,
       msg.chat.id,
       'https://www.kinopoisk.ru/index.php?kp_query=Inception',
     );
+
+    await emitMsg({
+      ...msg,
+      text: `/veto ${movie.id}`,
+    });
+
+    expect(movie).not.toBeNull();
+    expect(sendMessage).toHaveBeenCalledWith(
+      msg.chat.id,
+      expect.stringContaining('Вы не можете наложить вето на свой же фильм.'),
+    );
+  });
+
+  it('veto command should veto a movie', async () => {
+    const sendMessage = jest.spyOn(bot, 'sendMessage');
+    const chatId = 130;
+    await createGroup(String(chatId));
+    const user1 = await createUser(chatId);
+    const user2 = await createUser(chatId);
+    const msg = {
+      chat: { id: chatId },
+      text: '/veto 1',
+      from: { id: user2.id },
+    } as unknown as TelegramBot.Message;
+    await addUserToGroup(msg.chat.id, user1.id);
+    await addUserToGroup(msg.chat.id, user2.id);
+    const movie = await suggestMovie(
+      'Inception',
+      user1.id,
+      msg.chat.id,
+      'https://www.kinopoisk.ru/index.php?kp_query=Inception',
+    );
+
+    await emitMsg({
+      ...msg,
+      text: `/veto ${movie.id}`,
+    });
+
     expect(movie).not.toBeNull();
     expect(sendMessage).toHaveBeenCalledWith(
       msg.chat.id,
