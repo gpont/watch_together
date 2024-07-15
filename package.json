@@ -1,6 +1,6 @@
 {
   "name": "watch_together",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Telegram bot for selecting movies to watch together.",
   "main": "dist/controllers/bot.js",
   "scripts": {
