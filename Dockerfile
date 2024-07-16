@@ -10,4 +10,6 @@ RUN npm run build
 
 EXPOSE 3000
 
+ENV BOT_TOKEN=${BOT_TOKEN}
+
 CMD ["node", "dist/start.ts"]

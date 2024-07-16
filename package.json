@@ -2,9 +2,10 @@
   "name": "watch_together",
   "version": "0.1.0",
   "description": "Telegram bot for selecting movies to watch together.",
-  "main": "dist/controllers/bot.js",
+  "main": "dist/start.js",
   "scripts": {
-    "start": "ts-node src/controllers/bot.ts",
+    "init:db": "ts-node src/genDB.ts",
+    "start:dev": "export $(cat .env | xargs) && ts-node src/start.ts",
     "build": "tsc",
     "check": "tsc --noEmit",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
