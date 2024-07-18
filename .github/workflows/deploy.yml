@@ -34,9 +34,9 @@ jobs:
           username: ${{ secrets.VPS_SSH_USERNAME }}
           password: ${{ secrets.VPS_SSH_PASSWORD }}
           script: |
-            docker run -d --name telegram-movie-bot \
+            docker run -d --name watch_together \
             -e BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
-            -p 3000:3000 telegram-movie-bot:latest
+            -p 3000:3000 watch_together:latest
 
       - name: Pull Docker image from GitHub Container Registry
         run: |
