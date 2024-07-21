@@ -61,5 +61,5 @@ docker run -d watch_together
 ### Docker compose
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
