@@ -1,0 +1,14 @@
+services:
+  watch-together:
+    container_name: watch-together
+    image: watch-together:latest
+    build:
+      context: .
+    volumes:
+      - db:/usr/app/db
+    restart: unless-stopped
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+
+volumes:
+  db:

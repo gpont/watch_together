@@ -19,11 +19,11 @@ RUN npm run build
 
 FROM node:20
 
-WORKDIR /usr/src/app
+WORKDIR /usr/app
 
 COPY --from=build /usr/src/build/dist ./dist
 COPY --from=build /usr/src/build/node_modules ./node_modules
 
 ENV BOT_TOKEN=${BOT_TOKEN}
 
-CMD ["node", "./dist/start.js"]
+CMD ["sh", "-c", "node ./dist/genDB.js ; node ./dist/start.js"]
