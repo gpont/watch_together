@@ -1,6 +1,6 @@
 # Build image
 
-FROM node:20 as build
+FROM node:20 AS build
 
 RUN apt-get update
 RUN apt-get install -y sqlite3 
