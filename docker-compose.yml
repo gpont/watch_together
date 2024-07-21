@@ -1,9 +1,7 @@
 services:
   watch-together:
     container_name: watch-together
-    image: watch-together:latest
-    build:
-      context: .
+    image: ghcr.io/gpont/watch_together:latest
     volumes:
       - db:/usr/app/db
     restart: unless-stopped

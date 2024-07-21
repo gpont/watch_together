@@ -58,8 +58,14 @@ docker build -t watch_together .
 docker run -d watch_together
 ```
 
+or
+
+```bash
+docker run -d ghcr.io/gpont/watch_together:latest
+```
+
 ### Docker compose
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
