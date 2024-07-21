@@ -55,5 +55,11 @@ npm run build
 
 ```bash
 docker build -t watch_together .
-docker run -p 3000:3000 watch_together
+docker run -d watch_together
+```
+
+### Docker compose
+
+```bash
+docker compose up -d --build
 ```
