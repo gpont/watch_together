@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/gpont/watch_together/actions/workflows/ci.yml/badge.svg)](https://github.com/gpont/watch_together/actions/workflows/ci.yml)
 
+![preview-image](./docs/preview-image.png)
+
 Telegram bot for selecting movies to watch together.
 
 ## Bot commands
