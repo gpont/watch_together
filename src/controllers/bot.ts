@@ -140,7 +140,7 @@ export const botHandlers: [RegExp, THandler][] = [
       const chatId = msg.chat.id;
       const movies = await listMovies();
 
-      if (movies.length > 0) {
+      if (!!movies && movies.length > 0) {
         const movieList =
           texts.movie_list + movies.map(getMovieDescription).join('');
         bot.sendMessage(chatId, movieList, {

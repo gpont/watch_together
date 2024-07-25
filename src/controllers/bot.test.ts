@@ -22,6 +22,7 @@ jest.mock('node-telegram-bot-api');
 jest.mock('../consts.ts', () => ({
   DATABASE_FILENAME: './test_database.db',
   KINOPOISK_URL: 'https://www.kinopoisk.ru/index.php?kp_query=',
+  IMDB_URL: 'https://www.imdb.com/find/?q=',
 }));
 
 describe('Bot Commands', () => {
@@ -68,7 +69,7 @@ describe('Bot Commands', () => {
       msg.chat.id,
       expect.stringContaining('Привет!'),
     );
-    expect(user.group_id).toBe(msg.chat.id);
+    expect(user?.group_id).toBe(msg.chat.id);
   });
 
   it('help command should send help message', async () => {
@@ -181,7 +182,7 @@ describe('Bot Commands', () => {
 
     const movie = await findMovieById(insertedMovie?.id ?? 0, msg.chat.id);
 
-    expect(movie.votes).toBe(1);
+    expect(movie?.votes).toBe(1);
     expect(sendMessage).toHaveBeenCalledWith(
       msg.chat.id,
       expect.stringContaining('Вы проголосовали за фильм!'),
