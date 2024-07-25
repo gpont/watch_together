@@ -115,7 +115,8 @@ describe('Bot Commands', () => {
       text: `/join_group ${chatId}`,
       from: { id: 1 },
     } as unknown as TelegramBot.Message;
-    await addUserToGroup(msg.chat.id, user.id);
+    expect(user).not.toBeUndefined();
+    await addUserToGroup(msg.chat.id, user?.id ?? 0);
 
     await emitMsg(msg);
 
@@ -135,15 +136,17 @@ describe('Bot Commands', () => {
     } as unknown as TelegramBot.Message;
     await createGroup(String(msg.chat.id));
     const user = await createUser(msg.chat.id);
-    await addUserToGroup(msg.chat.id, user.id);
+    expect(user).not.toBeUndefined();
+    await addUserToGroup(msg.chat.id, user?.id ?? 0);
 
     await emitMsg(msg);
 
     const movie = await suggestMovie(
       'Inception',
-      user.id,
+      user?.id ?? 0,
       msg.chat.id,
       'https://www.kinopoisk.ru/index.php?kp_query=Inception',
+      'https://www.imdb.com/find/?q=Inception',
     );
     expect(movie).not.toBeNull();
     expect(sendMessage).toHaveBeenCalledWith(
@@ -160,20 +163,23 @@ describe('Bot Commands', () => {
     } as unknown as TelegramBot.Message;
     await createGroup(String(msg.chat.id));
     const user = await createUser(msg.chat.id);
-    await addUserToGroup(msg.chat.id, user.id);
+    expect(user).not.toBeUndefined();
+    await addUserToGroup(msg.chat.id, user?.id ?? 0);
     const insertedMovie = await suggestMovie(
       'Inception',
-      user.id,
+      user?.id ?? 0,
       msg.chat.id,
       'https://www.kinopoisk.ru/index.php?kp_query=Inception',
+      'https://www.imdb.com/find/?q=Inception',
     );
+    expect(insertedMovie).not.toBeUndefined();
 
     await emitMsg({
       ...msg,
-      text: `/vote ${insertedMovie.id}`,
+      text: `/vote ${insertedMovie?.id}`,
     });
 
-    const movie = await findMovieById(insertedMovie.id, msg.chat.id);
+    const movie = await findMovieById(insertedMovie?.id ?? 0, msg.chat.id);
 
     expect(movie.votes).toBe(1);
     expect(sendMessage).toHaveBeenCalledWith(
@@ -190,18 +196,22 @@ describe('Bot Commands', () => {
     } as unknown as TelegramBot.Message;
     await createGroup(String(msg.chat.id));
     const user = await createUser(msg.chat.id);
-    await addUserToGroup(msg.chat.id, user.id);
+    expect(user).not.toBeUndefined();
+    await addUserToGroup(msg.chat.id, user?.id ?? 0);
     const movie = await suggestMovie(
       'Inception',
-      user.id,
+      user?.id ?? 0,
       msg.chat.id,
       'https://www.kinopoisk.ru/index.php?kp_query=Inception',
+      'https://www.imdb.com/find/?q=Inception',
     );
+    expect(movie).not.toBeUndefined();
 
     await emitMsg(msg);
     expect(sendMessage).toHaveBeenCalledWith(
       msg.chat.id,
-      expect.stringContaining(movie.name),
+      expect.stringContaining(movie?.name ?? 'Inception'),
+      expect.objectContaining({}),
     );
   });
 
@@ -210,25 +220,27 @@ describe('Bot Commands', () => {
     const chatId = 129;
     await createGroup(String(chatId));
     const user = await createUser(chatId);
+    expect(user).not.toBeUndefined();
     const msg = {
       chat: { id: chatId },
       text: '/veto 1',
-      from: { id: user.id },
+      from: { id: user?.id },
     } as unknown as TelegramBot.Message;
-    await addUserToGroup(msg.chat.id, user.id);
+    await addUserToGroup(msg.chat.id, user?.id ?? 0);
     const movie = await suggestMovie(
       'Inception',
-      user.id,
+      user?.id ?? 0,
       msg.chat.id,
       'https://www.kinopoisk.ru/index.php?kp_query=Inception',
+      'https://www.imdb.com/find/?q=Inception',
     );
 
     await emitMsg({
       ...msg,
-      text: `/veto ${movie.id}`,
+      text: `/veto ${movie?.id}`,
     });
 
-    expect(movie).not.toBeNull();
+    expect(movie).not.toBeUndefined();
     expect(sendMessage).toHaveBeenCalledWith(
       msg.chat.id,
       expect.stringContaining('Вы не можете наложить вето на свой же фильм.'),
@@ -241,23 +253,26 @@ describe('Bot Commands', () => {
     await createGroup(String(chatId));
     const user1 = await createUser(chatId);
     const user2 = await createUser(chatId);
+    expect(user1).not.toBeUndefined();
+    expect(user2).not.toBeUndefined();
     const msg = {
       chat: { id: chatId },
       text: '/veto 1',
-      from: { id: user2.id },
+      from: { id: user2?.id ?? 0 },
     } as unknown as TelegramBot.Message;
-    await addUserToGroup(msg.chat.id, user1.id);
-    await addUserToGroup(msg.chat.id, user2.id);
+    await addUserToGroup(msg.chat.id, user1?.id ?? 0);
+    await addUserToGroup(msg.chat.id, user2?.id ?? 0);
     const movie = await suggestMovie(
       'Inception',
-      user1.id,
+      user1?.id ?? 0,
       msg.chat.id,
       'https://www.kinopoisk.ru/index.php?kp_query=Inception',
+      'https://www.imdb.com/find/?q=Inception',
     );
 
     await emitMsg({
       ...msg,
-      text: `/veto ${movie.id}`,
+      text: `/veto ${movie?.id ?? 0}`,
     });
 
     expect(movie).not.toBeNull();

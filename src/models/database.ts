@@ -25,7 +25,8 @@ export async function initializeDb() {
       name TEXT,
       suggested_by INTEGER,
       votes INTEGER DEFAULT 0,
-      link TEXT,
+      kinopoisk_link TEXT,
+      imdb_link TEXT,
       group_id INTEGER,
       FOREIGN KEY (suggested_by) REFERENCES users(id),
       FOREIGN KEY (group_id) REFERENCES groups(id)

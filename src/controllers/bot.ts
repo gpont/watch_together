@@ -15,7 +15,7 @@ import {
   markMovieAsWatched,
 } from '../models/moviesModel';
 import texts from '../texts.json';
-import { getKinopoiskUrl } from './helpers';
+import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
 
 type THandler = (
   bot: TelegramBot,
@@ -85,13 +85,31 @@ export const botHandlers: [RegExp, THandler][] = [
       const user = await createUser(chatId);
       const groupUser = await findGroupByCode(String(chatId));
 
-      if (groupUser) {
-        const link = getKinopoiskUrl(movieName);
-        await suggestMovie(movieName, user.id, groupUser.id, link);
-        bot.sendMessage(chatId, `${texts.movie_suggested} "${movieName}"`);
-      } else {
-        bot.sendMessage(chatId, texts.not_in_group);
+      if (!user) {
+        bot.sendMessage(chatId, texts.user_not_found);
+        return;
       }
+
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
+        return;
+      }
+
+      const movie = await suggestMovie(
+        movieName,
+        user.id,
+        groupUser.id,
+        getKinopoiskUrl(movieName),
+        getImdbUrl(movieName),
+      );
+      if (!movie) {
+        bot.sendMessage(chatId, texts.movie_not_added);
+        return;
+      }
+      bot.sendMessage(
+        chatId,
+        `${texts.movie_suggested}:\n${getMovieDescription(movie)}"`,
+      );
     },
   ],
   [
@@ -104,7 +122,7 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const movieId = match.slice(1).join(' ');
+      const movieId = parseInt(match.slice(1).join(''), 10);
 
       const movie = await findMovieById(movieId, chatId);
 
@@ -123,11 +141,11 @@ export const botHandlers: [RegExp, THandler][] = [
       const movies = await listMovies();
 
       if (movies.length > 0) {
-        let movieList = texts.movie_list;
-        for (const movie of movies) {
-          movieList += `${movie.id}. ${movie.name} (голоса: ${movie.votes}) - ${movie.link}\n`;
-        }
-        bot.sendMessage(chatId, movieList);
+        const movieList =
+          texts.movie_list + movies.map(getMovieDescription).join('');
+        bot.sendMessage(chatId, movieList, {
+          disable_web_page_preview: true,
+        });
       } else {
         bot.sendMessage(chatId, texts.movie_list_empty);
       }
@@ -143,7 +161,7 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const movieId = match.slice(1).join(' ');
+      const movieId = parseInt(match.slice(1).join(''), 10);
 
       const movie = await findMovieById(movieId, chatId);
 
@@ -171,7 +189,7 @@ export const botHandlers: [RegExp, THandler][] = [
         return;
       }
 
-      const movieId = match.slice(1).join(' ');
+      const movieId = parseInt(match.slice(1).join(''), 10);
 
       const movie = await findMovieById(movieId, chatId);
 
