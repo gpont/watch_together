@@ -1,16 +1,19 @@
 import { openDb } from './database';
+import { IGroup, IMovie, IUser, TId } from './moviesTypes';
 
 export async function createGroup(code: string) {
   const db = await openDb();
   await db.run(`INSERT INTO groups (code) VALUES (?)`, [code]);
 }
 
-export async function findGroupByCode(code: string) {
+export async function findGroupByCode(
+  code: string,
+): Promise<IGroup | undefined> {
   const db = await openDb();
-  return db.get(`SELECT id FROM groups WHERE code = ?`, [code]);
+  return db.get(`SELECT * FROM groups WHERE code = ?`, [code]);
 }
 
-export async function createUser(groupId: number) {
+export async function createUser(groupId: TId): Promise<IUser | undefined> {
   const db = await openDb();
   const res = await db.run(
     `INSERT OR IGNORE INTO users (group_id) VALUES (?)`,
@@ -22,7 +25,7 @@ export async function createUser(groupId: number) {
   return findUserById(res.lastID);
 }
 
-export async function addUserToGroup(groupId: number, userId: number) {
+export async function addUserToGroup(groupId: TId, userId: TId) {
   const db = await openDb();
   await db.run(`INSERT INTO group_users (group_id, user_id) VALUES (?, ?)`, [
     groupId,
@@ -33,18 +36,24 @@ export async function addUserToGroup(groupId: number, userId: number) {
 export async function suggestMovie(
   name: string,
   suggestedBy: number,
-  groupId: number,
-  link: string,
-) {
+  groupId: TId,
+  kinopoiskLink: string,
+  imdbLink: string,
+): Promise<IMovie | undefined> {
   const db = await openDb();
   const res = await db.run(
-    `INSERT INTO movies (name, suggested_by, group_id, link) VALUES (?, ?, ?, ?)`,
-    [name, suggestedBy, groupId, link],
+    `INSERT INTO movies (name, suggested_by, group_id, kinopoisk_link, imdb_link) VALUES (?, ?, ?, ?, ?)`,
+    [name, suggestedBy, groupId, kinopoiskLink, imdbLink],
   );
-  return findMovieById(String(res.lastID), groupId);
+  return res?.lastID !== undefined
+    ? findMovieById(res.lastID, groupId)
+    : undefined;
 }
 
-export async function findMovieById(movieId: string, groupId: number) {
+export async function findMovieById(
+  movieId: TId,
+  groupId: TId,
+): Promise<IMovie | undefined> {
   const db = await openDb();
   return db.get(`SELECT * FROM movies WHERE id = ? AND group_id = ?`, [
     movieId,
@@ -52,22 +61,24 @@ export async function findMovieById(movieId: string, groupId: number) {
   ]);
 }
 
-export async function voteForMovie(movieId: string) {
+export async function voteForMovie(movieId: TId) {
   const db = await openDb();
   await db.run(`UPDATE movies SET votes = votes + 1 WHERE id = ?`, [movieId]);
 }
 
-export async function listMovies() {
+export async function listMovies(): Promise<IMovie[] | undefined> {
   const db = await openDb();
-  return db.all(`SELECT id, name, suggested_by, votes, link FROM movies`);
+  return db.all(
+    `SELECT id, name, suggested_by, votes, kinopoisk_link, imdb_link FROM movies`,
+  );
 }
 
-export async function markMovieAsWatched(movieId: string) {
+export async function markMovieAsWatched(movieId: TId) {
   const db = await openDb();
   await db.run(`DELETE FROM movies WHERE id = ?`, [movieId]);
 }
 
-export async function findUserById(userId: number) {
+export async function findUserById(userId: TId): Promise<IUser | undefined> {
   const db = await openDb();
   return db.get(`SELECT * FROM users WHERE id = ?`, [userId]);
 }

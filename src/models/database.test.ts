@@ -33,12 +33,13 @@ describe('Database Tests', () => {
   it('should insert and retrieve movie', async () => {
     const db = await openDb();
     await db.run(
-      `INSERT INTO movies (name, suggested_by, group_id, link) VALUES ('Test Movie', 1, 1, 'http://example.com')`,
+      `INSERT INTO movies (name, suggested_by, group_id, kinopoisk_link, imdb_link) VALUES ('Test Movie', 1, 1, 'http://example1.com', 'http://example2.com')`,
     );
     const movie = await db.get(
       `SELECT * FROM movies WHERE name = 'Test Movie'`,
     );
     expect(movie.name).toBe('Test Movie');
-    expect(movie.link).toBe('http://example.com');
+    expect(movie.kinopoisk_link).toBe('http://example1.com');
+    expect(movie.imdb_link).toBe('http://example2.com');
   });
 });
