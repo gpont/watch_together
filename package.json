@@ -9,10 +9,13 @@
     "build": "tsc",
     "check": "tsc --noEmit",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
-    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "lint:fix": "npm run lint -- --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
+    "lint-format": "npm run lint && npm run format",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "npm run test -- --watch",
+    "test:coverage": "npm test -- --coverage",
+    "test:badges": "npm run test:coverage && jest-coverage-badges"
   },
   "keywords": [
     "tg-bot",
@@ -21,7 +24,7 @@
   "author": "Evgenii Guzhikhin",
   "license": "MIT",
   "dependencies": {
-    "node-telegram-bot-api": "^0.51.0",
+    "node-telegram-bot-api": "^0.63.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.0.2"
   },
@@ -37,6 +40,7 @@
     "@typescript-eslint/parser": "^4.29.3",
     "eslint": "^7.32.0",
     "jest": "^27.0.6",
+    "jest-coverage-badges": "^1.0.0",
     "prettier": "^2.3.2",
     "ts-jest": "^27.0.6",
     "ts-node": "^10.2.1",

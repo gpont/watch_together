@@ -1,5 +1,5 @@
-import { openDb } from './database';
-import { IGroup, IMovie, IUser, TId } from './moviesTypes';
+import { openDb } from '../../dbController';
+import { IGroup, IMovie, IUser, TId } from './types';
 
 export async function createGroup(code: string) {
   const db = await openDb();

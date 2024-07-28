@@ -1,10 +1,11 @@
 # Watch Together Telegram Bot
 
-[![CI](https://github.com/gpont/watch_together/actions/workflows/ci.yml/badge.svg)](https://github.com/gpont/watch_together/actions/workflows/ci.yml)
+[![CI](https://github.com/gpont/watch_together/actions/workflows/ci.yml/badge.svg)](https://github.com/gpont/watch_together/actions/workflows/ci.yml) ![Last commit](https://img.shields.io/github/last-commit/gpont/watch_together) ![Issues](https://img.shields.io/github/issues/gpont/watch_together)
 
 ![preview-image](./docs/preview-image.png)
 
 Telegram bot for selecting movies to watch together.
+[@watch_together_tg_bot](https://t.me/watch_together_tg_bot)
 
 ## Bot commands
 
@@ -28,11 +29,11 @@ cd watch_together
 npm i
 ```
 
-### Run
+### Run and developing
 
-```bash
-npm start
-```
+1. Create `.env` file with `BOT_TOKEN` variable;
+2. Run `npm init:db`;
+3. Run `npm start`;
 
 ### Testing
 
@@ -43,8 +44,7 @@ npm test
 ### Lint and format
 
 ```bash
-npm run lint:fix
-npm run format
+npm run lint-format
 ```
 
 ### Build
@@ -71,3 +71,7 @@ docker run -d ghcr.io/gpont/watch_together:latest
 ```bash
 docker compose up -d
 ```
+
+## Other links
+
+[Tech info](./docs/tech_info.md)

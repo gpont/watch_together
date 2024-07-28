@@ -2,7 +2,7 @@
 // deprecated Automatic enabling of cancellation
 // of promises is deprecated In the future
 process.env.NTBA_FIX_319 = '1';
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot, { SendMessageOptions } from 'node-telegram-bot-api';
 import {
   createGroup,
   findGroupByCode,
@@ -13,13 +13,18 @@ import {
   voteForMovie,
   listMovies,
   markMovieAsWatched,
-} from '../models/moviesModel';
+} from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
 
 type THandler = (
   bot: TelegramBot,
 ) => (msg: TelegramBot.Message, match: string[] | null) => void;
+
+const MSG_OPTIONS: SendMessageOptions = {
+  disable_web_page_preview: true,
+  parse_mode: 'Markdown',
+};
 
 export const botHandlers: [RegExp, THandler][] = [
   [
@@ -108,12 +113,13 @@ export const botHandlers: [RegExp, THandler][] = [
       }
       bot.sendMessage(
         chatId,
-        `${texts.movie_suggested}:\n${getMovieDescription(movie)}"`,
+        `${texts.movie_suggested}:\n${getMovieDescription(movie)}`,
+        MSG_OPTIONS,
       );
     },
   ],
   [
-    /\/vote (.+)/,
+    /\/vote ?(.+)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
 
@@ -124,7 +130,12 @@ export const botHandlers: [RegExp, THandler][] = [
 
       const movieId = parseInt(match.slice(1).join(''), 10);
 
-      const movie = await findMovieById(movieId, chatId);
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
+        return;
+      }
+      const movie = await findMovieById(movieId, parseInt(groupUser.code, 10));
 
       if (movie) {
         await voteForMovie(movieId);
@@ -143,9 +154,7 @@ export const botHandlers: [RegExp, THandler][] = [
       if (!!movies && movies.length > 0) {
         const movieList =
           texts.movie_list + movies.map(getMovieDescription).join('');
-        bot.sendMessage(chatId, movieList, {
-          disable_web_page_preview: true,
-        });
+        bot.sendMessage(chatId, movieList, MSG_OPTIONS);
       } else {
         bot.sendMessage(chatId, texts.movie_list_empty);
       }
@@ -194,12 +203,8 @@ export const botHandlers: [RegExp, THandler][] = [
       const movie = await findMovieById(movieId, chatId);
 
       if (movie) {
-        if (movie.suggested_by !== userId) {
-          await markMovieAsWatched(movieId);
-          bot.sendMessage(chatId, `${texts.vetoed} "${movie.name}"`);
-        } else {
-          bot.sendMessage(chatId, texts.cannot_veto_own);
-        }
+        await markMovieAsWatched(movieId);
+        bot.sendMessage(chatId, `${texts.vetoed} "${movie.name}"`);
       } else {
         bot.sendMessage(chatId, texts.movie_not_found);
       }
