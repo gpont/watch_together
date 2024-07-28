@@ -27,6 +27,7 @@ jest.mock('../consts.ts', () => ({
 
 describe('Bot Commands', () => {
   let bot: TelegramBot;
+  let chatId = 0;
   const emitMsg = async (msg: TelegramBot.Message) => {
     const handler = botHandlers.find((handler) => {
       if (!msg.text) {
@@ -39,6 +40,10 @@ describe('Bot Commands', () => {
     }
     const match = msg.text?.split(' ') ?? null;
     return await Promise.resolve(handler[1](bot)(msg, match));
+  };
+  const createChat = () => {
+    chatId += 1;
+    return chatId;
   };
 
   beforeAll(async () => {
@@ -58,7 +63,7 @@ describe('Bot Commands', () => {
     it('should send welcome message and create a user', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const msg = {
-        chat: { id: 123 },
+        chat: { id: createChat() },
         text: '/start',
       } as unknown as TelegramBot.Message;
 
@@ -78,7 +83,7 @@ describe('Bot Commands', () => {
     it('should send help message', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const msg = {
-        chat: { id: 123 },
+        chat: { id: createChat() },
         text: '/help',
       } as unknown as TelegramBot.Message;
 
@@ -95,7 +100,7 @@ describe('Bot Commands', () => {
     it('should create a new group', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const msg = {
-        chat: { id: 124 },
+        chat: { id: createChat() },
         text: '/create_group',
       } as unknown as TelegramBot.Message;
 
@@ -115,7 +120,7 @@ describe('Bot Commands', () => {
   describe('join_group', () => {
     it('should add user to group', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
-      const chatId = 125;
+      const chatId = createChat();
       await createGroup(String(chatId));
       const user = await createUser(chatId);
       const msg = {
@@ -138,10 +143,9 @@ describe('Bot Commands', () => {
 
     it('should error without group code', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
-      const chatId = 126;
       const msg = {
-        chat: { id: chatId },
-        text: `/join_group ${chatId}`,
+        chat: { id: createChat() },
+        text: '/join_group ',
         from: { id: 1 },
       } as unknown as TelegramBot.Message;
 
@@ -152,14 +156,46 @@ describe('Bot Commands', () => {
         expect.stringContaining('Код группы не указан'),
       );
     });
+
+    it('should error without user code', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const msg = {
+        chat: { id: createChat() },
+        text: '/join_group 1',
+        from: {},
+      } as unknown as TelegramBot.Message;
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Пользователь не найден'),
+      );
+    });
+
+    it('should error with wrong group code', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const msg = {
+        chat: { id: createChat() },
+        text: '/join_group 9999',
+        from: { id: 1 },
+      } as unknown as TelegramBot.Message;
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Группа с таким кодом не найдена'),
+      );
+    });
   });
 
-  describe('suggest_movie', () => {
+  describe('suggest', () => {
     it('should suggest a movie', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const msg = {
-        chat: { id: 127 },
-        text: '/suggest_movie Inception',
+        chat: { id: createChat() },
+        text: '/suggest Inception',
       } as unknown as TelegramBot.Message;
       await createGroup(String(msg.chat.id));
       const user = await createUser(msg.chat.id);
@@ -188,7 +224,7 @@ describe('Bot Commands', () => {
     it('should vote for a movie', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const msg = {
-        chat: { id: 128 },
+        chat: { id: createChat() },
         text: '/vote 1',
       } as unknown as TelegramBot.Message;
       await createGroup(String(msg.chat.id));
@@ -217,18 +253,49 @@ describe('Bot Commands', () => {
         expect.stringContaining('Вы проголосовали за фильм'),
       );
     });
+
+    it('should error with wrong group code', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const msg = {
+        chat: { id: createChat() },
+        text: '/vote',
+        from: { id: 1 },
+      } as unknown as TelegramBot.Message;
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Фильм не найдена'),
+      );
+    });
+
+    it('should error with wrong group code', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const msg = {
+        chat: { id: createChat() },
+        text: '/vote qwe',
+        from: { id: 1 },
+      } as unknown as TelegramBot.Message;
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Фильм не найдена'),
+      );
+    });
   });
 
-  describe('list_movies', () => {
+  describe('list', () => {
     it('should print current list of movies', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const msg = {
-        chat: { id: 129 },
-        text: '/list_movies',
+        chat: { id: createChat() },
+        text: '/list',
       } as unknown as TelegramBot.Message;
       await createGroup(String(msg.chat.id));
       const user = await createUser(msg.chat.id);
-      expect(user).not.toBeUndefined();
       await addUserToGroup(msg.chat.id, user?.id ?? 0);
       const movie = await suggestMovie(
         'Inception',
@@ -246,41 +313,106 @@ describe('Bot Commands', () => {
         expect.objectContaining({}),
       );
     });
+
+    it('should error if user not in group', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const msg = {
+        chat: { id: createChat() },
+        text: '/list',
+      } as unknown as TelegramBot.Message;
+      await createUser(msg.chat.id);
+
+      await emitMsg(msg);
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Вы не состоите'),
+        expect.objectContaining({}),
+      );
+    });
   });
 
   describe('veto', () => {
     it('veto command should veto a movie', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
-      const chatId = 131;
+      const chatId = createChat();
       await createGroup(String(chatId));
-      const user1 = await createUser(chatId);
-      const user2 = await createUser(chatId);
-      expect(user1).not.toBeUndefined();
-      expect(user2).not.toBeUndefined();
+      const user = await createUser(chatId);
       const msg = {
         chat: { id: chatId },
         text: '/veto 1',
-        from: { id: user2?.id ?? 0 },
+        from: { id: user?.id ?? 0 },
       } as unknown as TelegramBot.Message;
-      await addUserToGroup(msg.chat.id, user1?.id ?? 0);
-      await addUserToGroup(msg.chat.id, user2?.id ?? 0);
-      const movie = await suggestMovie(
+      await addUserToGroup(msg.chat.id, user?.id ?? 0);
+      const insertedMovie = await suggestMovie(
         'Inception',
-        user1?.id ?? 0,
-        msg.chat.id,
+        user?.id ?? 0,
+        chatId,
         'https://www.kinopoisk.ru/index.php?kp_query=Inception',
         'https://www.imdb.com/find/?q=Inception',
       );
 
       await emitMsg({
         ...msg,
-        text: `/veto ${movie?.id ?? 0}`,
+        text: `/veto ${insertedMovie?.id ?? 0}`,
       });
 
-      expect(movie).not.toBeNull();
+      const movie = await findMovieById(insertedMovie?.id ?? 0, chatId);
+
+      expect(movie?.is_vetoed).toBe(1);
       expect(sendMessage).toHaveBeenCalledWith(
         msg.chat.id,
-        expect.stringContaining('Фильм отклонен!'),
+        expect.stringContaining('Фильм удален'),
+      );
+    });
+  });
+
+  describe('random', () => {
+    it('should send a random movie', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const chatId = createChat();
+      await createGroup(String(chatId));
+      const user = await createUser(chatId);
+      const msg = {
+        chat: { id: chatId },
+        text: '/random',
+        from: { id: user?.id ?? 0 },
+      } as unknown as TelegramBot.Message;
+      await addUserToGroup(msg.chat.id, user?.id ?? 0);
+      await suggestMovie(
+        'Inception',
+        user?.id ?? 0,
+        chatId,
+        'https://www.kinopoisk.ru/index.php?kp_query=Inception',
+        'https://www.imdb.com/find/?q=Inception',
+      );
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining(''),
+        expect.objectContaining({}),
+      );
+    });
+
+    it('should error is list is empty', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const chatId = createChat();
+      await createGroup(String(chatId));
+      const user = await createUser(chatId);
+      const msg = {
+        chat: { id: chatId },
+        text: '/random',
+        from: { id: user?.id ?? 0 },
+      } as unknown as TelegramBot.Message;
+      await addUserToGroup(msg.chat.id, user?.id ?? 0);
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Список фильмов пуст'),
+        expect.objectContaining({}),
       );
     });
   });

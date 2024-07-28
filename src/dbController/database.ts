@@ -28,6 +28,7 @@ export async function initializeDb() {
       kinopoisk_link TEXT,
       imdb_link TEXT,
       group_id INTEGER,
+      is_vetoed BOOLEAN DEFAULT 0,
       FOREIGN KEY (suggested_by) REFERENCES users(id),
       FOREIGN KEY (group_id) REFERENCES groups(id)
     );
