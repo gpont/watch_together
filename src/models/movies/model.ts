@@ -1,9 +1,13 @@
 import { openDb } from '../../dbController';
 import { IGroup, IMovie, IUser, TId } from './types';
 
-export async function createGroup(code: string) {
+export async function createGroup(code: string): Promise<IGroup> {
   const db = await openDb();
-  await db.run(`INSERT INTO groups (code) VALUES (?)`, [code]);
+  const res = await db.run(`INSERT INTO groups (code) VALUES (?)`, [code]);
+  return {
+    id: res.lastID as TId,
+    code,
+  };
 }
 
 export async function findGroupByCode(
@@ -13,16 +17,10 @@ export async function findGroupByCode(
   return db.get(`SELECT * FROM groups WHERE code = ?`, [code]);
 }
 
-export async function createUser(groupId: TId): Promise<IUser | undefined> {
+export async function createUser(): Promise<IUser | undefined> {
   const db = await openDb();
-  const res = await db.run(
-    `INSERT OR IGNORE INTO users (group_id) VALUES (?)`,
-    [groupId],
-  );
-  if (!res.lastID) {
-    throw new Error(`Failed to create user. groupId: ${groupId}`);
-  }
-  return findUserById(res.lastID);
+  const res = await db.run(`INSERT OR IGNORE INTO users DEFAULT VALUES`);
+  return { id: res.lastID as TId };
 }
 
 export async function addUserToGroup(groupId: TId, userId: TId) {
@@ -71,9 +69,12 @@ export async function listMovies(groupId: TId): Promise<IMovie[] | undefined> {
   return db.all(`SELECT * FROM movies WHERE group_id = ?`, [groupId]);
 }
 
-export async function markMovieAsWatched(movieId: TId) {
+export async function markMovieAsWatched(movieId: TId, groupId: TId) {
   const db = await openDb();
-  await db.run(`DELETE FROM movies WHERE id = ?`, [movieId]);
+  await db.run(`DELETE FROM movies WHERE id = ? AND group_id = ?`, [
+    movieId,
+    groupId,
+  ]);
 }
 
 export async function markMovieAsVetoed(movieId: TId) {

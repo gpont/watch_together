@@ -14,6 +14,7 @@ import {
   listMovies,
   markMovieAsWatched,
   markMovieAsVetoed,
+  findUserById,
 } from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
@@ -31,7 +32,7 @@ export const botHandlers: [RegExp, THandler][] = [
   [
     /\/start/,
     (bot) => async (msg) => {
-      await createUser(msg.chat.id);
+      await createUser();
       bot.sendMessage(msg.chat.id, texts.start);
     },
   ],
@@ -80,15 +81,21 @@ export const botHandlers: [RegExp, THandler][] = [
     /\/suggest (.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
+      const userId = msg.from?.id;
 
       if (!match) {
-        bot.sendMessage(chatId, texts.movie_not_found);
+        bot.sendMessage(chatId, texts.no_movie_name);
+        return;
+      }
+
+      if (!userId) {
+        bot.sendMessage(chatId, texts.user_not_found);
         return;
       }
 
       const movieName = match.slice(1).join(' ');
 
-      const user = await createUser(chatId);
+      const user = await findUserById(userId);
       const groupUser = await findGroupByCode(String(chatId));
 
       if (!user) {
@@ -136,7 +143,7 @@ export const botHandlers: [RegExp, THandler][] = [
         bot.sendMessage(chatId, texts.not_in_group);
         return;
       }
-      const movie = await findMovieById(movieId, parseInt(groupUser.code, 10));
+      const movie = await findMovieById(movieId, groupUser.id);
 
       if (movie) {
         await voteForMovie(movieId);
@@ -169,21 +176,27 @@ export const botHandlers: [RegExp, THandler][] = [
     },
   ],
   [
-    /\/watched (.+)/,
+    /\/watched (.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
 
-      if (!match) {
+      if (!match?.[1]) {
         bot.sendMessage(chatId, texts.movie_not_found);
         return;
       }
 
       const movieId = parseInt(match.slice(1).join(''), 10);
 
-      const movie = await findMovieById(movieId, chatId);
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
+        return;
+      }
+
+      const movie = await findMovieById(movieId, groupUser.id);
 
       if (movie) {
-        await markMovieAsWatched(movieId);
+        await markMovieAsWatched(movieId, groupUser.id);
         bot.sendMessage(chatId, `${texts.movie_watched} "${movie.name}"`);
       } else {
         bot.sendMessage(chatId, texts.movie_not_found);
@@ -191,24 +204,23 @@ export const botHandlers: [RegExp, THandler][] = [
     },
   ],
   [
-    /\/veto (.+)/,
+    /\/veto (.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
 
-      if (!match) {
+      if (!match?.[1]) {
         bot.sendMessage(chatId, texts.movie_not_found);
         return;
       }
 
-      const userId = msg.from?.id;
-      if (!userId) {
-        bot.sendMessage(chatId, texts.user_not_found);
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
         return;
       }
 
       const movieId = parseInt(match.slice(1).join(''), 10);
-
-      const movie = await findMovieById(movieId, chatId);
+      const movie = await findMovieById(movieId, groupUser.id);
 
       if (movie) {
         await markMovieAsVetoed(movieId);

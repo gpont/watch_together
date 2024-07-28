@@ -25,9 +25,11 @@ describe('Database Tests', () => {
 
   it('should insert and retrieve user', async () => {
     const db = await openDb();
-    await db.run(`INSERT INTO users (group_id) VALUES (123456)`);
-    const user = await db.get(`SELECT * FROM users WHERE group_id = 123456`);
-    expect(user.group_id).toBe(123456);
+    const res = await db.run(`INSERT INTO users DEFAULT VALUES`);
+    const user = await db.get(`SELECT * FROM users WHERE id = ?`, [
+      res.lastID as number,
+    ]);
+    expect(user.id).toBe(res.lastID as number);
   });
 
   it('should insert and retrieve movie', async () => {
