@@ -7,7 +7,6 @@ export interface IGroup {
 
 export interface IUser {
   id: TId;
-  group_id: number;
 }
 
 export interface IMovie {
@@ -15,6 +14,7 @@ export interface IMovie {
   name: string;
   suggested_by: TId;
   votes: number;
+  is_vetoed: boolean;
   kinopoisk_link: string;
   imdb_link: string;
   group_id: TId;

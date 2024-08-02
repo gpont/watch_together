@@ -6,4 +6,17 @@ module.exports = {
       tsconfig: 'tsconfig.json',
     },
   },
+  coverageReporters: [
+    "json-summary",
+    "text",
+    "lcov"
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 77,
+      functions: 98,
+      lines: 93,
+      statements: 93
+    }
+  }
 };

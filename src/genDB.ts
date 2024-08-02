@@ -1,3 +1,3 @@
-import { initializeDb } from './models/database';
+import { initializeDb } from './dbController';
 
 initializeDb();

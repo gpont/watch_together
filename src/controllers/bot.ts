@@ -2,7 +2,7 @@
 // deprecated Automatic enabling of cancellation
 // of promises is deprecated In the future
 process.env.NTBA_FIX_319 = '1';
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot, { SendMessageOptions } from 'node-telegram-bot-api';
 import {
   createGroup,
   findGroupByCode,
@@ -13,7 +13,9 @@ import {
   voteForMovie,
   listMovies,
   markMovieAsWatched,
-} from '../models/moviesModel';
+  markMovieAsVetoed,
+  findUserById,
+} from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
 
@@ -21,11 +23,16 @@ type THandler = (
   bot: TelegramBot,
 ) => (msg: TelegramBot.Message, match: string[] | null) => void;
 
+const MSG_OPTIONS: SendMessageOptions = {
+  disable_web_page_preview: true,
+  parse_mode: 'Markdown',
+};
+
 export const botHandlers: [RegExp, THandler][] = [
   [
     /\/start/,
     (bot) => async (msg) => {
-      await createUser(msg.chat.id);
+      await createUser();
       bot.sendMessage(msg.chat.id, texts.start);
     },
   ],
@@ -44,12 +51,12 @@ export const botHandlers: [RegExp, THandler][] = [
     },
   ],
   [
-    /\/join_group (.+)/,
+    /\/join_group (.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
 
-      if (match === null) {
-        bot.sendMessage(chatId, texts.group_not_found);
+      if (!match?.[1]) {
+        bot.sendMessage(chatId, texts.no_group_code);
         return;
       }
 
@@ -71,18 +78,24 @@ export const botHandlers: [RegExp, THandler][] = [
     },
   ],
   [
-    /\/suggest_movie (.+)/,
+    /\/suggest (.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
+      const userId = msg.from?.id;
 
-      if (match === null) {
-        bot.sendMessage(chatId, texts.movie_not_found);
+      if (!match?.[1]) {
+        bot.sendMessage(chatId, texts.no_movie_name);
+        return;
+      }
+
+      if (!userId) {
+        bot.sendMessage(chatId, texts.user_not_found);
         return;
       }
 
       const movieName = match.slice(1).join(' ');
 
-      const user = await createUser(chatId);
+      const user = await findUserById(userId);
       const groupUser = await findGroupByCode(String(chatId));
 
       if (!user) {
@@ -108,23 +121,29 @@ export const botHandlers: [RegExp, THandler][] = [
       }
       bot.sendMessage(
         chatId,
-        `${texts.movie_suggested}:\n${getMovieDescription(movie)}"`,
+        `${texts.movie_suggested}:\n${getMovieDescription(movie)}`,
+        MSG_OPTIONS,
       );
     },
   ],
   [
-    /\/vote (.+)/,
+    /\/vote ?(.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
 
-      if (match === null) {
+      if (!match) {
         bot.sendMessage(chatId, texts.movie_not_found);
         return;
       }
 
       const movieId = parseInt(match.slice(1).join(''), 10);
 
-      const movie = await findMovieById(movieId, chatId);
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
+        return;
+      }
+      const movie = await findMovieById(movieId, groupUser.id);
 
       if (movie) {
         await voteForMovie(movieId);
@@ -135,38 +154,49 @@ export const botHandlers: [RegExp, THandler][] = [
     },
   ],
   [
-    /\/list_movies/,
+    /\/list/,
     (bot) => async (msg) => {
       const chatId = msg.chat.id;
-      const movies = await listMovies();
+
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
+        return;
+      }
+
+      const movies = await listMovies(groupUser.id);
 
       if (!!movies && movies.length > 0) {
         const movieList =
           texts.movie_list + movies.map(getMovieDescription).join('');
-        bot.sendMessage(chatId, movieList, {
-          disable_web_page_preview: true,
-        });
+        bot.sendMessage(chatId, movieList, MSG_OPTIONS);
       } else {
         bot.sendMessage(chatId, texts.movie_list_empty);
       }
     },
   ],
   [
-    /\/watched (.+)/,
+    /\/watched (.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
 
-      if (match === null) {
+      if (!match?.[1]) {
         bot.sendMessage(chatId, texts.movie_not_found);
         return;
       }
 
       const movieId = parseInt(match.slice(1).join(''), 10);
 
-      const movie = await findMovieById(movieId, chatId);
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
+        return;
+      }
+
+      const movie = await findMovieById(movieId, groupUser.id);
 
       if (movie) {
-        await markMovieAsWatched(movieId);
+        await markMovieAsWatched(movieId, groupUser.id);
         bot.sendMessage(chatId, `${texts.movie_watched} "${movie.name}"`);
       } else {
         bot.sendMessage(chatId, texts.movie_not_found);
@@ -174,34 +204,52 @@ export const botHandlers: [RegExp, THandler][] = [
     },
   ],
   [
-    /\/veto (.+)/,
+    /\/veto (.*)/,
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
 
-      if (match === null) {
+      if (!match?.[1]) {
         bot.sendMessage(chatId, texts.movie_not_found);
         return;
       }
 
-      const userId = msg.from?.id;
-      if (!userId) {
-        bot.sendMessage(chatId, texts.user_not_found);
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
         return;
       }
 
       const movieId = parseInt(match.slice(1).join(''), 10);
-
-      const movie = await findMovieById(movieId, chatId);
+      const movie = await findMovieById(movieId, groupUser.id);
 
       if (movie) {
-        if (movie.suggested_by !== userId) {
-          await markMovieAsWatched(movieId);
-          bot.sendMessage(chatId, `${texts.vetoed} "${movie.name}"`);
-        } else {
-          bot.sendMessage(chatId, texts.cannot_veto_own);
-        }
+        await markMovieAsVetoed(movieId);
+        bot.sendMessage(chatId, `${texts.vetoed} "${movie.name}"`);
       } else {
         bot.sendMessage(chatId, texts.movie_not_found);
+      }
+    },
+  ],
+  [
+    /\/random/,
+    (bot) => async (msg) => {
+      const chatId = msg.chat.id;
+
+      const groupUser = await findGroupByCode(String(chatId));
+      if (!groupUser) {
+        bot.sendMessage(chatId, texts.not_in_group);
+        return;
+      }
+
+      const movies = await listMovies(groupUser.id);
+
+      if (!!movies && movies.length > 0) {
+        const movie = movies.filter((movie) => !movie.is_vetoed)[
+          Math.floor(Math.random() * movies.length)
+        ];
+        bot.sendMessage(chatId, getMovieDescription(movie), MSG_OPTIONS);
+      } else {
+        bot.sendMessage(chatId, texts.movie_list_empty);
       }
     },
   ],

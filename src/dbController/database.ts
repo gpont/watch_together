@@ -17,8 +17,7 @@ export async function initializeDb() {
       code TEXT UNIQUE
     );
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      group_id INTEGER
+      id INTEGER PRIMARY KEY AUTOINCREMENT
     );
     CREATE TABLE IF NOT EXISTS movies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,6 +27,7 @@ export async function initializeDb() {
       kinopoisk_link TEXT,
       imdb_link TEXT,
       group_id INTEGER,
+      is_vetoed BOOLEAN DEFAULT 0,
       FOREIGN KEY (suggested_by) REFERENCES users(id),
       FOREIGN KEY (group_id) REFERENCES groups(id)
     );
