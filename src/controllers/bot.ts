@@ -83,7 +83,7 @@ export const botHandlers: [RegExp, THandler][] = [
       const chatId = msg.chat.id;
       const userId = msg.from?.id;
 
-      if (!match) {
+      if (!match?.[1]) {
         bot.sendMessage(chatId, texts.no_movie_name);
         return;
       }
@@ -244,7 +244,9 @@ export const botHandlers: [RegExp, THandler][] = [
       const movies = await listMovies(groupUser.id);
 
       if (!!movies && movies.length > 0) {
-        const movie = movies[Math.floor(Math.random() * movies.length)];
+        const movie = movies.filter((movie) => !movie.is_vetoed)[
+          Math.floor(Math.random() * movies.length)
+        ];
         bot.sendMessage(chatId, getMovieDescription(movie), MSG_OPTIONS);
       } else {
         bot.sendMessage(chatId, texts.movie_list_empty);

@@ -244,7 +244,6 @@ describe('Bot Commands', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         msg.chat.id,
         expect.stringContaining('Название фильма не указано'),
-        expect.objectContaining({}),
       );
     });
   });
@@ -393,9 +392,8 @@ describe('Bot Commands', () => {
 
     it('should error if no movie id', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
-      const chatId = createChat();
       const msg = {
-        chat: { id: chatId },
+        chat: { id: createChat() },
         text: '/watched ',
       } as unknown as TelegramBot.Message;
 
@@ -409,10 +407,9 @@ describe('Bot Commands', () => {
 
     it('should error if user not in group', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
-      const chatId = createChat();
       const msg = {
-        chat: { id: chatId },
-        text: '/watched 9999',
+        chat: { id: createChat() },
+        text: '/watched 9998',
       } as unknown as TelegramBot.Message;
 
       await emitMsg(msg);
@@ -496,10 +493,14 @@ describe('Bot Commands', () => {
     it('should error if wrong movie code', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const chatId = createChat();
+      const user = await createUser();
+      const group = await createGroup(String(chatId));
       const msg = {
         chat: { id: chatId },
         text: '/veto 9999',
+        from: { id: user?.id ?? 0 },
       } as unknown as TelegramBot.Message;
+      await addUserToGroup(group.id, user?.id ?? 0);
 
       await emitMsg(msg);
 

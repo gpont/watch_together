@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">89.92% </span>
+                <span class="strong">90.76% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>116/129</span>
+                <span class='fraction'>118/130</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">76.47% </span>
+                <span class="strong">78.18% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>39/51</span>
+                <span class='fraction'>43/55</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>29/29</span>
+                <span class='fraction'>30/30</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">89.16% </span>
+                <span class="strong">90% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>107/120</span>
+                <span class='fraction'>108/120</span>
             </div>
         
             
@@ -317,7 +317,9 @@
 <a name='L252'></a><a href='#L252'>252</a>
 <a name='L253'></a><a href='#L253'>253</a>
 <a name='L254'></a><a href='#L254'>254</a>
-<a name='L255'></a><a href='#L255'>255</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -403,13 +405,13 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -534,20 +536,20 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -564,6 +566,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -656,9 +660,9 @@ export const botHandlers: [RegExp, THandler][] = [
       const chatId = msg.chat.id;
       const userId = msg.from?.id;
 &nbsp;
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (!match) {
-<span class="cstat-no" title="statement not covered" >        bot.sendMessage(chatId, texts.no_movie_name);</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
+      if (!match<span class="branch-0 cbranch-no" title="branch not covered" >?.[1</span>]) {
+        bot.sendMessage(chatId, texts.no_movie_name);
+        return;
       }
 &nbsp;
       if (!userId) {
@@ -787,9 +791,9 @@ export const botHandlers: [RegExp, THandler][] = [
       }
 &nbsp;
       const groupUser = await findGroupByCode(String(chatId));
-      if (!groupUser) {
-        bot.sendMessage(chatId, texts.not_in_group);
-        return;
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (!groupUser) {
+<span class="cstat-no" title="statement not covered" >        bot.sendMessage(chatId, texts.not_in_group);</span>
+<span class="cstat-no" title="statement not covered" >        return;</span>
       }
 &nbsp;
       const movieId = parseInt(match.slice(1).join(''), 10);
@@ -798,8 +802,8 @@ export const botHandlers: [RegExp, THandler][] = [
       if (movie) {
         await markMovieAsVetoed(movieId);
         bot.sendMessage(chatId, `${texts.vetoed} "${movie.name}"`);
-      } else <span class="missing-if-branch" title="else path not taken" >E</span>{
-<span class="cstat-no" title="statement not covered" >        bot.sendMessage(chatId, texts.movie_not_found);</span>
+      } else {
+        bot.sendMessage(chatId, texts.movie_not_found);
       }
     },
   ],
@@ -817,7 +821,9 @@ export const botHandlers: [RegExp, THandler][] = [
       const movies = await listMovies(groupUser.id);
 &nbsp;
       if (!!movies &amp;&amp; movies.length &gt; 0) {
-        const movie = movies[Math.floor(Math.random() * movies.length)];
+        const movie = movies.filter((movie) =&gt; !movie.is_vetoed)[
+          Math.floor(Math.random() * movies.length)
+        ];
         bot.sendMessage(chatId, getMovieDescription(movie), MSG_OPTIONS);
       } else {
         bot.sendMessage(chatId, texts.movie_list_empty);
@@ -832,7 +838,7 @@ export const botHandlers: [RegExp, THandler][] = [
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-07-28T14:17:20.878Z
+                at 2024-08-02T06:19:45.240Z
             </div>
         <script src="../prettify.js"></script>
         <script>
