@@ -17,6 +17,7 @@ Telegram bot for selecting movies to watch together.
 - `/vote <movie number>` - Vote for a suggested movie.
 - `/list` - Show the list of suggested movies.
 - `/watched <movie number>` - Mark a movie as watched.
+- `/random` - Show a random movie from list.
 - `/veto <movie number>` - Remove movie from random.
 
 ## Development
