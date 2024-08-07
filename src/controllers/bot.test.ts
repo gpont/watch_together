@@ -117,6 +117,24 @@ describe('Bot Commands', () => {
         ),
       );
     });
+
+    it('should error with duplicate group code', async () => {
+      const chatId = createChat();
+      await createGroup(String(chatId));
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const msg = {
+        chat: { id: chatId },
+        text: '/create_group',
+        from: { username: 'test' },
+      } as unknown as TelegramBot.Message;
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Группа уже создана'),
+      );
+    });
   });
 
   describe('join_group', () => {

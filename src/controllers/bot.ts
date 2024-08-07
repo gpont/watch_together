@@ -58,6 +58,11 @@ const rawBotHandlers: [RegExp, THandler][] = [
     /\/create_group/,
     (bot) => async (msg) => {
       const chatId = msg.chat.id;
+      const group = await findGroupByCode(String(chatId));
+      if (group) {
+        bot.sendMessage(chatId, texts.group_already_created + group.code);
+        return;
+      }
       await createGroup(String(chatId));
       bot.sendMessage(chatId, `${texts.group_created} ${chatId}`);
     },
@@ -178,11 +183,11 @@ const rawBotHandlers: [RegExp, THandler][] = [
       const chatId = msg.chat.id;
 
       const group = await checkAndGetGroup(msg);
-      const movies = await checkAndGetMoviesList(group.id);
+      const movies = (await checkAndGetMoviesList(group.id)).filter(
+        (movie) => !movie.is_vetoed,
+      );
 
-      const movie = movies.filter((movie) => !movie.is_vetoed)[
-        Math.floor(Math.random() * movies.length)
-      ];
+      const movie = movies[Math.floor(Math.random() * movies.length)];
       bot.sendMessage(chatId, getMovieDescription(movie), MSG_OPTIONS);
     },
   ],
