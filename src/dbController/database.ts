@@ -17,13 +17,13 @@ export async function initializeDb() {
       code TEXT UNIQUE
     );
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE
     );
     CREATE TABLE IF NOT EXISTS movies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
       suggested_by INTEGER,
-      votes INTEGER DEFAULT 0,
       kinopoisk_link TEXT,
       imdb_link TEXT,
       group_id INTEGER,
@@ -35,6 +35,12 @@ export async function initializeDb() {
       group_id INTEGER,
       user_id INTEGER,
       FOREIGN KEY (group_id) REFERENCES groups(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE TABLE IF NOT EXISTS votes (
+      movie_id INTEGER,
+      user_id INTEGER,
+      FOREIGN KEY (movie_id) REFERENCES movies(id),
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
