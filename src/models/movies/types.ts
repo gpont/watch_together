@@ -7,6 +7,7 @@ export interface IGroup {
 
 export interface IUser {
   id: TId;
+  username: string;
 }
 
 export interface IMovie {
