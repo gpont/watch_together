@@ -103,8 +103,12 @@ export async function listMovies(groupId: TId): Promise<IMovie[] | undefined> {
   const db = await openDb();
   return db
     .all(`SELECT * FROM movies WHERE group_id = ?`, [groupId])
-    .then((rows) => Promise.all(rows.map(mapMovie)))
-    .then((movies) => movies.filter((row): row is IMovie => !!row));
+    .then((rows: (Omit<IMovie, 'votes'> | undefined)[]) =>
+      Promise.all(rows.map(mapMovie)),
+    )
+    .then((movies: (IMovie | undefined)[]) =>
+      movies.filter((row): row is IMovie => !!row),
+    );
 }
 
 export async function markMovieAsWatched(movieId: TId, groupId: TId) {
