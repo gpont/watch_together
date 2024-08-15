@@ -6,7 +6,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import texts from '../texts.json';
 import { CheckError } from '../middlewares/errorHandler';
 import {
-  findGroupByCode,
+  findGroupByUserId,
   findMovieById,
   findUserByUsername,
   IGroup,
@@ -33,8 +33,8 @@ export const checkAndGetUserByUsername = async (
 export const checkAndGetGroup = async (
   msg: TelegramBot.Message,
 ): Promise<IGroup> => {
-  const chatId = msg.chat.id;
-  const group = await findGroupByCode(String(chatId));
+  const user = await checkAndGetUserByUsername(msg);
+  const group = await findGroupByUserId(user.id);
 
   if (!group) {
     throw new CheckError(texts.not_in_group);

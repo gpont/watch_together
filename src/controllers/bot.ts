@@ -14,12 +14,12 @@ import {
   markMovieAsVetoed,
   hasUserMovieVote,
   findUserByUsername,
+  findGroupByUserId,
 } from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
 import {
   applyMiddlewares,
-  CheckError,
   handleCheckErrors,
   logger,
   TRule,
@@ -41,11 +41,11 @@ const rawBotHandlers: TRule[] = [
   [
     /\/start/,
     (bot) => async (msg) => {
-      const username = msg.from?.username;
+      const username = msg.from?.username ?? '';
 
-      const user = await findUserByUsername(username ?? '');
+      const user = await findUserByUsername(username);
       if (!user) {
-        await createUser(msg.from?.username ?? '');
+        await createUser(username);
       }
 
       bot.sendMessage(msg.chat.id, texts.start);
@@ -61,13 +61,15 @@ const rawBotHandlers: TRule[] = [
     /\/create_group/,
     (bot) => async (msg) => {
       const chatId = msg.chat.id;
-      const group = await findGroupByCode(String(chatId));
-      if (group) {
-        bot.sendMessage(chatId, texts.group_already_created + group.code);
+      const user = await checkAndGetUserByUsername(msg);
+
+      const foundGroup = await findGroupByUserId(user.id);
+      if (foundGroup) {
+        bot.sendMessage(chatId, texts.group_already_created + foundGroup.code);
         return;
       }
-      await createGroup(String(chatId));
-      bot.sendMessage(chatId, `${texts.group_created} ${chatId}`);
+      const group = await createGroup();
+      bot.sendMessage(chatId, `${texts.group_created} ${group.code}`);
     },
   ],
   [
@@ -75,13 +77,13 @@ const rawBotHandlers: TRule[] = [
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
       const groupCode = checkAndGetArg(match, texts.no_group_code);
-      const user = await checkAndGetUserByUsername(msg);
 
       const group = await findGroupByCode(groupCode);
       if (!group) {
         bot.sendMessage(chatId, texts.group_not_found);
         return;
       }
+      const user = await checkAndGetUserByUsername(msg);
       await addUserToGroup(group.id, user.id);
       bot.sendMessage(chatId, texts.joined_group);
     },

@@ -45,3 +45,15 @@ export async function initializeDb() {
     );
   `);
 }
+
+export async function listAllTablesData() {
+  const db = await openDb();
+
+  console.log({
+    groups: await db.all('SELECT * FROM groups'),
+    users: await db.all('SELECT * FROM users'),
+    movies: await db.all('SELECT * FROM movies'),
+    group_users: await db.all('SELECT * FROM group_users'),
+    votes: await db.all('SELECT * FROM votes'),
+  });
+}
