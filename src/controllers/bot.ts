@@ -13,11 +13,17 @@ import {
   markMovieAsWatched,
   markMovieAsVetoed,
   hasUserMovieVote,
+  findUserByUsername,
 } from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
-import { CheckError, handleCheckErrors } from '../errorHandler';
-import { THandler } from '../controllersTypes';
+import {
+  applyMiddlewares,
+  CheckError,
+  handleCheckErrors,
+  logger,
+  TRule,
+} from '../middlewares';
 import {
   checkAndGetArg,
   checkAndGetGroup,
@@ -31,18 +37,15 @@ const MSG_OPTIONS: SendMessageOptions = {
   parse_mode: 'Markdown',
 };
 
-const rawBotHandlers: [RegExp, THandler][] = [
+const rawBotHandlers: TRule[] = [
   [
     /\/start/,
     (bot) => async (msg) => {
-      try {
-        await checkAndGetUserByUsername(msg);
-      } catch (error) {
-        if (error instanceof CheckError) {
-          await createUser(msg.from?.username ?? '');
-        } else {
-          throw error;
-        }
+      const username = msg.from?.username;
+
+      const user = await findUserByUsername(username ?? '');
+      if (!user) {
+        await createUser(msg.from?.username ?? '');
       }
 
       bot.sendMessage(msg.chat.id, texts.start);
@@ -50,7 +53,7 @@ const rawBotHandlers: [RegExp, THandler][] = [
   ],
   [
     /\/help/,
-    (bot) => (msg) => {
+    (bot) => async (msg) => {
       bot.sendMessage(msg.chat.id, texts.help);
     },
   ],
@@ -99,10 +102,6 @@ const rawBotHandlers: [RegExp, THandler][] = [
         getKinopoiskUrl(movieName),
         getImdbUrl(movieName),
       );
-      if (!movie) {
-        bot.sendMessage(chatId, texts.movie_not_added);
-        return;
-      }
       bot.sendMessage(
         chatId,
         `${texts.movie_suggested}:\n${getMovieDescription(movie)}`,
@@ -193,6 +192,7 @@ const rawBotHandlers: [RegExp, THandler][] = [
   ],
 ];
 
-export const botHandlers = rawBotHandlers.map(
-  ([regexp, handler]) => [regexp, handleCheckErrors(handler)] as const,
-);
+export const botHandlers = applyMiddlewares(rawBotHandlers, [
+  logger,
+  handleCheckErrors,
+]);

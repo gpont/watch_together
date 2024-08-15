@@ -1,10 +1,8 @@
-import { THandler } from '../controllersTypes';
+import { TMiddleware } from '../controllers.types';
 import { CheckError } from './CheckError';
 
-export const handleCheckErrors =
-  (handler: THandler): THandler =>
-  (bot) =>
-  async (msg, match) => {
+export const handleCheckErrors: TMiddleware =
+  (handler) => (bot) => async (msg, match) => {
     try {
       await handler(bot)(msg, match);
     } catch (error) {

@@ -1,38 +1,6 @@
 import { openDb } from '../../dbController';
-import { IGroup, IMovie, IUser, TId } from './types';
-
-export async function createGroup(code: string): Promise<IGroup> {
-  const db = await openDb();
-  const res = await db.run(`INSERT INTO groups (code) VALUES (?)`, [code]);
-  return {
-    id: res.lastID as TId,
-    code,
-  };
-}
-
-export async function findGroupByCode(
-  code: string,
-): Promise<IGroup | undefined> {
-  const db = await openDb();
-  return db.get(`SELECT * FROM groups WHERE code = ?`, [code]);
-}
-
-export async function createUser(username: string): Promise<IUser | undefined> {
-  const db = await openDb();
-  const res = await db.run(
-    `INSERT OR IGNORE INTO users (username) VALUES (?)`,
-    [username],
-  );
-  return { id: res.lastID as TId, username };
-}
-
-export async function addUserToGroup(groupId: TId, userId: TId) {
-  const db = await openDb();
-  await db.run(`INSERT INTO group_users (group_id, user_id) VALUES (?, ?)`, [
-    groupId,
-    userId,
-  ]);
-}
+import { TId } from '../types';
+import { IMovie } from './types';
 
 export async function suggestMovie(
   name: string,
@@ -40,15 +8,26 @@ export async function suggestMovie(
   groupId: TId,
   kinopoiskLink: string,
   imdbLink: string,
-): Promise<IMovie | undefined> {
+): Promise<IMovie> {
   const db = await openDb();
   const res = await db.run(
     `INSERT INTO movies (name, suggested_by, group_id, kinopoisk_link, imdb_link) VALUES (?, ?, ?, ?, ?)`,
     [name, suggestedBy, groupId, kinopoiskLink, imdbLink],
   );
-  return res?.lastID !== undefined
-    ? findMovieById(res.lastID, groupId)
-    : undefined;
+  const movie =
+    res?.lastID !== undefined
+      ? await findMovieById(res.lastID, groupId)
+      : undefined;
+  if (!movie) {
+    throw new Error(
+      `Failed to insert movie: ${JSON.stringify({
+        name,
+        suggestedBy,
+        groupId,
+      })}`,
+    );
+  }
+  return movie;
 }
 
 async function calcMovieVotes(movieId: TId): Promise<number> {
@@ -122,11 +101,4 @@ export async function markMovieAsWatched(movieId: TId, groupId: TId) {
 export async function markMovieAsVetoed(movieId: TId) {
   const db = await openDb();
   await db.run(`UPDATE movies SET is_vetoed = 1 WHERE id = ?`, [movieId]);
-}
-
-export async function findUserByUsername(
-  username: string,
-): Promise<IUser | undefined> {
-  const db = await openDb();
-  return db.get(`SELECT * FROM users WHERE username = ?`, [username]);
 }

@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">96.8% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>91/94</span>
+                <span class='fraction'>90/90</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">71.42% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>10/14</span>
+                <span class='fraction'>16/20</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">96.47% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>82/85</span>
+                <span class='fraction'>80/80</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -277,12 +277,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -294,18 +292,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -361,10 +364,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -457,7 +456,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Fix for error: node-telegram-bot-api
 // deprecated Automatic enabling of cancellation
@@ -474,11 +474,17 @@ import {
   markMovieAsWatched,
   markMovieAsVetoed,
   hasUserMovieVote,
+  findUserByUsername,
 } from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
-import { CheckError, handleCheckErrors } from '../errorHandler';
-import { THandler } from '../controllersTypes';
+import {
+  applyMiddlewares,
+  CheckError,
+  handleCheckErrors,
+  logger,
+  TRule,
+} from '../middlewares';
 import {
   checkAndGetArg,
   checkAndGetGroup,
@@ -492,18 +498,15 @@ const MSG_OPTIONS: SendMessageOptions = {
   parse_mode: 'Markdown',
 };
 &nbsp;
-const rawBotHandlers: [RegExp, THandler][] = [
+const rawBotHandlers: TRule[] = [
   [
     /\/start/,
     (bot) =&gt; async (msg) =&gt; {
-      try {
-        await checkAndGetUserByUsername(msg);
-      } catch (error) {
-        if (error instanceof CheckError) {
-          await createUser(msg.from<span class="branch-0 cbranch-no" title="branch not covered" >?.u</span>sername ?? <span class="branch-1 cbranch-no" title="branch not covered" >'')</span>;
-        } else <span class="missing-if-branch" title="else path not taken" >E</span>{
-<span class="cstat-no" title="statement not covered" >          throw error;</span>
-        }
+      const username = msg.from<span class="branch-0 cbranch-no" title="branch not covered" >?.u</span>sername;
+&nbsp;
+      const user = await findUserByUsername(username ?? <span class="branch-1 cbranch-no" title="branch not covered" >'')</span>;
+      if (!user) {
+        await createUser(msg.from<span class="branch-0 cbranch-no" title="branch not covered" >?.u</span>sername ?? <span class="branch-1 cbranch-no" title="branch not covered" >'')</span>;
       }
 &nbsp;
       bot.sendMessage(msg.chat.id, texts.start);
@@ -511,7 +514,7 @@ const rawBotHandlers: [RegExp, THandler][] = [
   ],
   [
     /\/help/,
-    (bot) =&gt; (msg) =&gt; {
+    (bot) =&gt; async (msg) =&gt; {
       bot.sendMessage(msg.chat.id, texts.help);
     },
   ],
@@ -560,10 +563,6 @@ const rawBotHandlers: [RegExp, THandler][] = [
         getKinopoiskUrl(movieName),
         getImdbUrl(movieName),
       );
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (!movie) {
-<span class="cstat-no" title="statement not covered" >        bot.sendMessage(chatId, texts.movie_not_added);</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
-      }
       bot.sendMessage(
         chatId,
         `${texts.movie_suggested}:\n${getMovieDescription(movie)}`,
@@ -654,9 +653,10 @@ const rawBotHandlers: [RegExp, THandler][] = [
   ],
 ];
 &nbsp;
-export const botHandlers = rawBotHandlers.map(
-  ([regexp, handler]) =&gt; [regexp, handleCheckErrors(handler)] as const,
-);
+export const botHandlers = applyMiddlewares(rawBotHandlers, [
+  logger,
+  handleCheckErrors,
+]);
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -664,7 +664,7 @@ export const botHandlers = rawBotHandlers.map(
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-08-12T08:32:52.349Z
+                at 2024-08-15T16:18:23.465Z
             </div>
         <script src="../prettify.js"></script>
         <script>

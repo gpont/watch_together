@@ -17,11 +17,11 @@ import {
 import { initializeDb } from '../dbController';
 import { botHandlers } from './bot';
 
-const DATABASE_FILENAME = './test_database.db';
+const DATABASE_FILENAME = './db/test_database.db';
 
 jest.mock('node-telegram-bot-api');
 jest.mock('../consts.ts', () => ({
-  DATABASE_FILENAME: './test_database.db',
+  DATABASE_FILENAME: './db/test_database.db',
   KINOPOISK_URL: 'https://www.kinopoisk.ru/index.php?kp_query=',
   IMDB_URL: 'https://www.imdb.com/find/?q=',
 }));
@@ -30,17 +30,15 @@ describe('Bot Commands', () => {
   let bot: TelegramBot;
   let chatId = 0;
   const emitMsg = async (msg: TelegramBot.Message) => {
-    const handler = botHandlers.find((handler) => {
-      if (!msg.text) {
-        return false;
-      }
-      return handler[0].test(msg.text);
-    });
+    const handler = botHandlers.find((handler) =>
+      msg.text ? handler[0].test(msg.text) : false,
+    );
     if (!handler) {
       return;
     }
     const match = msg.text?.split(' ') ?? null;
-    return await Promise.resolve(handler[1](bot)(msg, match));
+    const msgHandler = handler[1](bot);
+    return await msgHandler(msg, match);
   };
   const createChat = () => {
     chatId += 1;
@@ -54,9 +52,6 @@ describe('Bot Commands', () => {
 
   afterAll(async () => {
     fs.rmSync(DATABASE_FILENAME);
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
   });
 
@@ -305,6 +300,7 @@ describe('Bot Commands', () => {
     });
 
     it('should not vote for a movie 2 times', async () => {
+      bot = new TelegramBot('test_token', { polling: true });
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const chatId = createChat();
       const group = await createGroup(String(chatId));

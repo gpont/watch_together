@@ -4,7 +4,7 @@
 process.env.NTBA_FIX_319 = '1';
 import TelegramBot from 'node-telegram-bot-api';
 import texts from '../texts.json';
-import { CheckError } from '../errorHandler';
+import { CheckError } from '../middlewares/errorHandler';
 import {
   findGroupByCode,
   findMovieById,

@@ -1,10 +1,10 @@
 import fs from 'fs';
 import { openDb, initializeDb } from './database';
 
-const DATABASE_FILENAME = './test_database.db';
+const DATABASE_FILENAME = './db/test_database.db';
 
 jest.mock('../consts.ts', () => ({
-  DATABASE_FILENAME: './test_database.db',
+  DATABASE_FILENAME: './db/test_database.db',
 }));
 
 describe('Database Tests', () => {

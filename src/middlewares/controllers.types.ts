@@ -6,4 +6,8 @@ import TelegramBot from 'node-telegram-bot-api';
 
 export type THandler = (
   bot: TelegramBot,
-) => (msg: TelegramBot.Message, match: string[] | null) => void;
+) => (msg: TelegramBot.Message, match: string[] | null) => Promise<void>;
+
+export type TRule = [RegExp, THandler];
+
+export type TMiddleware = (handler: THandler) => THandler;

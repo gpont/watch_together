@@ -1,14 +1,4 @@
-export type TId = number;
-
-export interface IGroup {
-  id: TId;
-  code: string;
-}
-
-export interface IUser {
-  id: TId;
-  username: string;
-}
+import { TId } from '../types';
 
 export interface IMovie {
   id: TId;

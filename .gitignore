@@ -1,4 +1,8 @@
 node_modules
 dist
-database.db
+coverage/Icon-report/*
+coverage/coverage-summary.json
+coverage/Icov.info
+db/database.db
+db/test_database.db
 .env
