@@ -6,3 +6,4 @@ coverage/Icov.info
 db/database.db
 db/test_database.db
 .env
+.DS_Store
