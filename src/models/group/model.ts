@@ -36,3 +36,11 @@ export async function addUserToGroup(groupId: TId, userId: TId) {
     userId,
   ]);
 }
+
+export async function removeUserFromGroup(groupId: TId, userId: TId) {
+  const db = await openDb();
+  await db.run('DELETE FROM group_users WHERE user_id =? AND group_id =?', [
+    userId,
+    groupId,
+  ]);
+}

@@ -212,6 +212,31 @@ describe('Bot Commands', () => {
     });
   });
 
+  describe('leave_group', () => {
+    it('should remove user from group', async () => {
+      const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const chatId = createChat();
+      const group = await createGroup();
+      const user = await createUser(String(chatId));
+      await addUserToGroup(group.id, user?.id ?? 0);
+      const msg = {
+        chat: { id: chatId },
+        text: `/leave_group`,
+        from: { username: user?.username },
+      } as unknown as TelegramBot.Message;
+
+      await emitMsg(msg);
+
+      const userGroup = await findGroupByUserId(user?.id ?? 0);
+
+      expect(userGroup).toBeUndefined();
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Вы покинули группу'),
+      );
+    });
+  });
+
   describe('suggest', () => {
     it('should suggest a movie', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');

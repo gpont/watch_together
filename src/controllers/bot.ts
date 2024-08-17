@@ -15,6 +15,7 @@ import {
   hasUserMovieVote,
   findUserByUsername,
   findGroupByUserId,
+  removeUserFromGroup,
 } from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
@@ -86,6 +87,17 @@ const rawBotHandlers: TRule[] = [
       const user = await checkAndGetUserByUsername(msg);
       await addUserToGroup(group.id, user.id);
       bot.sendMessage(chatId, texts.joined_group);
+    },
+  ],
+  [
+    /\/leave_group/,
+    (bot) => async (msg) => {
+      const chatId = msg.chat.id;
+      const user = await checkAndGetUserByUsername(msg);
+      const group = await checkAndGetGroup(msg);
+
+      await removeUserFromGroup(group.id, user.id);
+      bot.sendMessage(chatId, texts.left_group);
     },
   ],
   [

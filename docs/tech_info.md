@@ -7,6 +7,7 @@ Test bot(for local development): [@watch_together_test_bot](https://t.me/watch_t
 
 create_group - создать группу
 join_group - присоединиться к группе
+leave_group - покинуть группу
 suggest - предложить фильм
 vote - проголосовать за фильм
 list - показать список фильмов
