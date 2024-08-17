@@ -3,7 +3,6 @@ dist
 coverage/Icon-report/*
 coverage/coverage-summary.json
 coverage/Icov.info
-db/database.db
-db/test_database.db
+db/*.db
 .env
 .DS_Store
