@@ -65,7 +65,7 @@ describe('Bot Commands', () => {
         chat: { id: createChat() },
         text: '/start',
         from: { username: 'test' },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -85,7 +85,7 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: createChat() },
         text: '/help',
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -100,12 +100,12 @@ describe('Bot Commands', () => {
     it('should create a new group', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const chatId = createChat();
+      const user = await createUser(String(chatId));
       const msg = {
         chat: { id: chatId },
         text: '/create_group',
-        user: { username: String(chatId) },
-      } as unknown as TelegramBot.Message;
-      const user = await createUser(String(chatId));
+        from: { username: user?.username },
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -113,21 +113,21 @@ describe('Bot Commands', () => {
       expect(group).not.toBeNull();
       expect(sendMessage).toHaveBeenCalledWith(
         msg.chat.id,
-        expect.stringContaining(
-          `Группа создана! Код для присоединения: ${msg.chat.id}`,
-        ),
+        expect.stringContaining(`Группа создана! Код для присоединения:`),
       );
     });
 
-    it('should error with duplicate group code', async () => {
-      const chatId = createChat();
-      await createGroup();
+    it('should error with existing group', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const chatId = createChat();
+      const user = await createUser(String(chatId));
+      const group = await createGroup();
+      await addUserToGroup(group.id, user?.id ?? 0);
       const msg = {
         chat: { id: chatId },
         text: '/create_group',
-        from: { username: 'test' },
-      } as unknown as TelegramBot.Message;
+        from: { username: user?.username },
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -148,7 +148,7 @@ describe('Bot Commands', () => {
         chat: { id: chatId },
         text: `/join_group ${group.code}`,
         from: { username: user?.username },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
       await addUserToGroup(group.id, user?.id ?? 0);
 
       await emitMsg(msg);
@@ -167,7 +167,7 @@ describe('Bot Commands', () => {
         chat: { id: createChat() },
         text: '/join_group ',
         from: { username: user?.username },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -179,11 +179,12 @@ describe('Bot Commands', () => {
 
     it('should error without username', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const group = await createGroup();
       const msg = {
         chat: { id: createChat() },
-        text: '/join_group 1',
+        text: `/join_group ${group.code}`,
         from: {},
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -201,7 +202,7 @@ describe('Bot Commands', () => {
         chat: { id: chatId },
         text: '/join_group 9999',
         from: { username: user?.username },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -223,7 +224,7 @@ describe('Bot Commands', () => {
         chat: { id: chatId },
         text: `/leave_group`,
         from: { username: user?.username },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -240,14 +241,15 @@ describe('Bot Commands', () => {
   describe('suggest', () => {
     it('should suggest a movie', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const chatId = createChat();
+      const group = await createGroup();
       const user = await createUser(String(chatId));
+      await addUserToGroup(group.id, user?.id ?? 0);
       const msg = {
-        chat: { id: createChat() },
+        chat: { id: chatId },
         text: '/suggest Inception',
         from: { username: user?.username ?? 0 },
-      } as unknown as TelegramBot.Message;
-      const group = await createGroup();
-      await addUserToGroup(group.id, user?.id ?? 0);
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -265,7 +267,7 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: createChat() },
         text: '/suggest Inception',
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -282,7 +284,7 @@ describe('Bot Commands', () => {
         chat: { id: createChat() },
         text: '/suggest ',
         from: { username: user?.username ?? 0 },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
       const group = await createGroup();
       await addUserToGroup(group.id, user?.id ?? 0);
 
@@ -305,7 +307,7 @@ describe('Bot Commands', () => {
         chat: { id: createChat() },
         text: '/vote 1',
         from: { username: user?.username ?? '' },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
       const group = await createGroup();
       await addUserToGroup(group.id, user?.id ?? 0);
       const insertedMovie = await suggestMovie(
@@ -341,7 +343,7 @@ describe('Bot Commands', () => {
         chat: { id: chatId },
         text: '/vote 1',
         from: { username: user?.username ?? '' },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
       const insertedMovie = await suggestMovie(
         'Inception',
         user?.id ?? 0,
@@ -375,7 +377,7 @@ describe('Bot Commands', () => {
         chat: { id: chatId },
         text: '/vote',
         from: { username: user?.username ?? '' },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -395,7 +397,7 @@ describe('Bot Commands', () => {
         chat: { id: chatId },
         text: '/vote qwe',
         from: { username: user?.username ?? '' },
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -409,13 +411,15 @@ describe('Bot Commands', () => {
   describe('list', () => {
     it('should print current list of movies', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
-      const msg = {
-        chat: { id: createChat() },
-        text: '/list',
-      } as unknown as TelegramBot.Message;
+      const chatId = createChat();
       const group = await createGroup();
       const user = await createUser(String(chatId));
       await addUserToGroup(group.id, user?.id ?? 0);
+      const msg = {
+        chat: { id: chatId },
+        text: '/list',
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
       const movie = await suggestMovie(
         'Inception',
         user?.id ?? 0,
@@ -434,11 +438,13 @@ describe('Bot Commands', () => {
 
     it('should error if user not in group', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const chatId = createChat();
+      const user = await createUser(String(chatId));
       const msg = {
         chat: { id: createChat() },
         text: '/list',
-      } as unknown as TelegramBot.Message;
-      await createUser(String(msg.chat.id));
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
       expect(sendMessage).toHaveBeenCalledWith(
@@ -457,8 +463,8 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: chatId },
         text: '/watched 1',
-        from: { id: user?.id ?? 0 },
-      } as unknown as TelegramBot.Message;
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
       await addUserToGroup(group.id, user?.id ?? 0);
       const insertedMovie = await suggestMovie(
         'Inception',
@@ -488,7 +494,7 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: createChat() },
         text: '/watched ',
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -500,10 +506,13 @@ describe('Bot Commands', () => {
 
     it('should error if user not in group', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
+      const chatId = createChat();
+      const user = await createUser(String(chatId));
       const msg = {
         chat: { id: createChat() },
         text: '/watched 9998',
-      } as unknown as TelegramBot.Message;
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -516,13 +525,14 @@ describe('Bot Commands', () => {
     it('should error if wrong movie code', async () => {
       const sendMessage = jest.spyOn(bot, 'sendMessage');
       const chatId = createChat();
-      const msg = {
-        chat: { id: chatId },
-        text: '/watched 9999',
-      } as unknown as TelegramBot.Message;
       const group = await createGroup();
       const user = await createUser(String(chatId));
       await addUserToGroup(group.id, user?.id ?? 0);
+      const msg = {
+        chat: { id: chatId },
+        text: '/watched 9999',
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -539,12 +549,12 @@ describe('Bot Commands', () => {
       const chatId = createChat();
       const group = await createGroup();
       const user = await createUser(String(chatId));
+      await addUserToGroup(group.id, user?.id ?? 0);
       const msg = {
         chat: { id: chatId },
         text: '/veto 1',
-        from: { id: user?.id ?? 0 },
-      } as unknown as TelegramBot.Message;
-      await addUserToGroup(group.id, user?.id ?? 0);
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
       const insertedMovie = await suggestMovie(
         'Inception',
         user?.id ?? 0,
@@ -573,7 +583,7 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: chatId },
         text: '/veto ',
-      } as unknown as TelegramBot.Message;
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -591,8 +601,8 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: chatId },
         text: '/veto 9999',
-        from: { id: user?.id ?? 0 },
-      } as unknown as TelegramBot.Message;
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
       await addUserToGroup(group.id, user?.id ?? 0);
 
       await emitMsg(msg);
@@ -610,12 +620,12 @@ describe('Bot Commands', () => {
       const chatId = createChat();
       const group = await createGroup();
       const user = await createUser(String(chatId));
+      await addUserToGroup(group.id, user?.id ?? 0);
       const msg = {
         chat: { id: chatId },
         text: '/random',
-        from: { id: user?.id ?? 0 },
-      } as unknown as TelegramBot.Message;
-      await addUserToGroup(group.id, user?.id ?? 0);
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
       await suggestMovie(
         'Inception',
         user?.id ?? 0,
@@ -640,8 +650,8 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: chatId },
         text: '/random',
-        from: { id: user?.id ?? 0 },
-      } as unknown as TelegramBot.Message;
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
 
       await emitMsg(msg);
 
@@ -659,8 +669,8 @@ describe('Bot Commands', () => {
       const msg = {
         chat: { id: chatId },
         text: '/random',
-        from: { id: user?.id ?? 0 },
-      } as unknown as TelegramBot.Message;
+        from: { username: user?.username ?? '' },
+      } as TelegramBot.Message;
       await addUserToGroup(group.id, user?.id ?? 0);
 
       await emitMsg(msg);

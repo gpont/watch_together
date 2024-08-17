@@ -70,6 +70,7 @@ const rawBotHandlers: TRule[] = [
         return;
       }
       const group = await createGroup();
+      await addUserToGroup(group.id, user.id);
       bot.sendMessage(chatId, `${texts.group_created} ${group.code}`);
     },
   ],
