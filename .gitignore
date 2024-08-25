@@ -1,8 +1,8 @@
 node_modules
 dist
-coverage/Icon-report/*
+coverage/lcov-report/*
 coverage/coverage-summary.json
-coverage/Icov.info
+coverage/lcov.info
 db/*.db
 .env
 .DS_Store

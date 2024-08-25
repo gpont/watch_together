@@ -18,6 +18,7 @@ export async function initializeDb() {
     );
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uid TEXT UNIQUE,
       username TEXT UNIQUE
     );
     CREATE TABLE IF NOT EXISTS movies (

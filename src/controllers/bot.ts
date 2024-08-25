@@ -13,14 +13,15 @@ import {
   markMovieAsWatched,
   markMovieAsVetoed,
   hasUserMovieVote,
-  findUserByUsername,
   findGroupByUserId,
   removeUserFromGroup,
+  getUserByUid,
 } from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
 import {
   applyMiddlewares,
+  CheckError,
   handleCheckErrors,
   logger,
   TRule,
@@ -29,7 +30,7 @@ import {
   checkAndGetArg,
   checkAndGetGroup,
   checkAndGetMovie,
-  checkAndGetUserByUsername,
+  checkAndGetUser,
   checkAndGetMoviesList,
 } from './checkers';
 
@@ -42,11 +43,15 @@ const rawBotHandlers: TRule[] = [
   [
     /\/start/,
     (bot) => async (msg) => {
-      const username = msg.from?.username ?? '';
+      const username = msg.from?.username;
+      const userId = msg.from?.id;
 
-      const user = await findUserByUsername(username);
+      if (!username || !userId) {
+        throw new CheckError(texts.invalid_user);
+      }
+      const user = await getUserByUid(userId);
       if (!user) {
-        await createUser(username);
+        await createUser(username, userId);
       }
 
       bot.sendMessage(msg.chat.id, texts.start);
@@ -62,7 +67,7 @@ const rawBotHandlers: TRule[] = [
     /\/create_group/,
     (bot) => async (msg) => {
       const chatId = msg.chat.id;
-      const user = await checkAndGetUserByUsername(msg);
+      const user = await checkAndGetUser(msg);
 
       const foundGroup = await findGroupByUserId(user.id);
       if (foundGroup) {
@@ -85,16 +90,21 @@ const rawBotHandlers: TRule[] = [
         bot.sendMessage(chatId, texts.group_not_found);
         return;
       }
-      const user = await checkAndGetUserByUsername(msg);
-      await addUserToGroup(group.id, user.id);
-      bot.sendMessage(chatId, texts.joined_group);
+      const user = await checkAndGetUser(msg);
+      const userGroup = await findGroupByUserId(user.id);
+      if (userGroup) {
+        bot.sendMessage(chatId, texts.already_in_group);
+      } else {
+        await addUserToGroup(group.id, user.id);
+        bot.sendMessage(chatId, texts.joined_group);
+      }
     },
   ],
   [
     /\/leave_group/,
     (bot) => async (msg) => {
       const chatId = msg.chat.id;
-      const user = await checkAndGetUserByUsername(msg);
+      const user = await checkAndGetUser(msg);
       const group = await checkAndGetGroup(msg);
 
       await removeUserFromGroup(group.id, user.id);
@@ -107,7 +117,7 @@ const rawBotHandlers: TRule[] = [
       const chatId = msg.chat.id;
       const movieName = checkAndGetArg(match, texts.no_movie_name);
 
-      const user = await checkAndGetUserByUsername(msg);
+      const user = await checkAndGetUser(msg);
       const group = await checkAndGetGroup(msg);
 
       const movie = await suggestMovie(
@@ -133,7 +143,7 @@ const rawBotHandlers: TRule[] = [
         10,
       );
 
-      const user = await checkAndGetUserByUsername(msg);
+      const user = await checkAndGetUser(msg);
       const group = await checkAndGetGroup(msg);
       const movie = await checkAndGetMovie(movieId, group.id);
 

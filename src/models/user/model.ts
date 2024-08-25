@@ -1,14 +1,17 @@
 import { openDb } from '../../dbController';
-import { TId } from '../types';
+import { UId } from '../types';
 import { IUser } from './types';
 
-export async function createUser(username: string): Promise<IUser | undefined> {
+export async function createUser(
+  username: string,
+  uid: UId,
+): Promise<IUser | undefined> {
   const db = await openDb();
-  const res = await db.run(
-    `INSERT OR IGNORE INTO users (username) VALUES (?)`,
-    [username],
-  );
-  return { id: res.lastID as TId, username };
+  await db.run(`INSERT OR IGNORE INTO users (username, uid) VALUES (?, ?)`, [
+    username,
+    uid,
+  ]);
+  return await db.get(`SELECT * FROM users WHERE uid = ?`, [uid]);
 }
 
 export async function findUserByUsername(
@@ -16,4 +19,9 @@ export async function findUserByUsername(
 ): Promise<IUser | undefined> {
   const db = await openDb();
   return db.get(`SELECT * FROM users WHERE username = ?`, [username]);
+}
+
+export async function getUserByUid(uid: UId): Promise<IUser | undefined> {
+  const db = await openDb();
+  return db.get(`SELECT * FROM users WHERE uid =?`, [uid]);
 }
