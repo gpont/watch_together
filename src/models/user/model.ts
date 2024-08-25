@@ -14,13 +14,6 @@ export async function createUser(
   return await db.get(`SELECT * FROM users WHERE uid = ?`, [uid]);
 }
 
-export async function findUserByUsername(
-  username: string,
-): Promise<IUser | undefined> {
-  const db = await openDb();
-  return db.get(`SELECT * FROM users WHERE username = ?`, [username]);
-}
-
 export async function getUserByUid(uid: UId): Promise<IUser | undefined> {
   const db = await openDb();
   return db.get(`SELECT * FROM users WHERE uid =?`, [uid]);

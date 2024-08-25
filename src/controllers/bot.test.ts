@@ -67,6 +67,20 @@ describe('Bot Commands', () => {
         expect.stringContaining('Привет!'),
       );
     });
+
+    it('should error with invalid user', async () => {
+      const { sendMessage, msg } = await setupChat('/start', {
+        createUser: false,
+        createGroup: false,
+      });
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Вы не залогинены'),
+      );
+    });
   });
 
   describe('help', () => {
@@ -165,6 +179,18 @@ describe('Bot Commands', () => {
         expect.stringContaining('Группа с таким кодом не найдена'),
       );
     });
+
+    it('should error with user already in the group', async () => {
+      const { sendMessage, msg, group } = await setupChat('/join_group');
+
+      await emitMsg({ ...msg, text: `/join_group ${group.code}` });
+      await emitMsg({ ...msg, text: `/join_group ${group.code}` });
+
+      expect(sendMessage).toHaveBeenLastCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Вы уже состоите в группе'),
+      );
+    });
   });
 
   describe('leave_group', () => {
@@ -179,6 +205,19 @@ describe('Bot Commands', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         msg.chat.id,
         expect.stringContaining('Вы покинули группу'),
+      );
+    });
+
+    it('should error without user', async () => {
+      const { sendMessage, msg } = await setupChat('/leave_group', {
+        createUser: false,
+      });
+
+      await emitMsg(msg);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        msg.chat.id,
+        expect.stringContaining('Пользователь не найден'),
       );
     });
   });
