@@ -24,6 +24,7 @@ import {
   CheckError,
   handleCheckErrors,
   logger,
+  mockData,
   TRule,
 } from '../middlewares';
 import {
@@ -218,6 +219,7 @@ const rawBotHandlers: TRule[] = [
 ];
 
 export const botHandlers = applyMiddlewares(rawBotHandlers, [
+  mockData,
   logger,
   handleCheckErrors,
 ]);

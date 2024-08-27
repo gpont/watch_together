@@ -5,7 +5,9 @@
   "main": "dist/start.js",
   "scripts": {
     "init:db": "ts-node src/genDB.ts",
-    "start:dev": "DEBUG_OUTPUT=1 export $(cat .env | xargs) && ts-node src/start.ts",
+    "reinit:db": "rm -f db/database.db && npm run init:db",
+    "start": "ts-node src/start.ts",
+    "start:dev": "DEBUG_OUTPUT=1 export $(cat .env | xargs) && npm run reinit:db && nodemon",
     "build": "tsc",
     "check": "tsc --noEmit",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
@@ -41,6 +43,7 @@
     "eslint": "^7.32.0",
     "jest": "^27.5.1",
     "jest-coverage-badges": "^1.0.0",
+    "nodemon": "^3.1.4",
     "prettier": "^2.8.8",
     "ts-jest": "^27.1.5",
     "ts-node": "^10.9.2",
