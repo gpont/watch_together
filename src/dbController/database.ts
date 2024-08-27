@@ -18,6 +18,7 @@ export async function initializeDb() {
     );
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uid TEXT UNIQUE,
       username TEXT UNIQUE
     );
     CREATE TABLE IF NOT EXISTS movies (
@@ -44,4 +45,16 @@ export async function initializeDb() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
+}
+
+export async function listAllTablesData() {
+  const db = await openDb();
+
+  console.log({
+    groups: await db.all('SELECT * FROM groups'),
+    users: await db.all('SELECT * FROM users'),
+    movies: await db.all('SELECT * FROM movies'),
+    group_users: await db.all('SELECT * FROM group_users'),
+    votes: await db.all('SELECT * FROM votes'),
+  });
 }

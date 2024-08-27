@@ -1,4 +1,8 @@
 node_modules
 dist
-database.db
+coverage/lcov-report/*
+coverage/coverage-summary.json
+coverage/lcov.info
+db/*.db
 .env
+.DS_Store

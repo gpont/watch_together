@@ -13,16 +13,25 @@ import {
   markMovieAsWatched,
   markMovieAsVetoed,
   hasUserMovieVote,
+  findGroupByUserId,
+  removeUserFromGroup,
+  getUserByUid,
 } from '../models';
 import texts from '../texts.json';
 import { getImdbUrl, getKinopoiskUrl, getMovieDescription } from './helpers';
-import { CheckError, handleCheckErrors } from '../errorHandler';
-import { THandler } from '../controllersTypes';
+import {
+  applyMiddlewares,
+  CheckError,
+  handleCheckErrors,
+  logger,
+  mockData,
+  TRule,
+} from '../middlewares';
 import {
   checkAndGetArg,
   checkAndGetGroup,
   checkAndGetMovie,
-  checkAndGetUserByUsername,
+  checkAndGetUser,
   checkAndGetMoviesList,
 } from './checkers';
 
@@ -31,18 +40,19 @@ const MSG_OPTIONS: SendMessageOptions = {
   parse_mode: 'Markdown',
 };
 
-const rawBotHandlers: [RegExp, THandler][] = [
+const rawBotHandlers: TRule[] = [
   [
     /\/start/,
     (bot) => async (msg) => {
-      try {
-        await checkAndGetUserByUsername(msg);
-      } catch (error) {
-        if (error instanceof CheckError) {
-          await createUser(msg.from?.username ?? '');
-        } else {
-          throw error;
-        }
+      const username = msg.from?.username;
+      const userId = msg.from?.id;
+
+      if (!username || !userId) {
+        throw new CheckError(texts.invalid_user);
+      }
+      const user = await getUserByUid(userId);
+      if (!user) {
+        await createUser(username, userId);
       }
 
       bot.sendMessage(msg.chat.id, texts.start);
@@ -50,7 +60,7 @@ const rawBotHandlers: [RegExp, THandler][] = [
   ],
   [
     /\/help/,
-    (bot) => (msg) => {
+    (bot) => async (msg) => {
       bot.sendMessage(msg.chat.id, texts.help);
     },
   ],
@@ -58,13 +68,16 @@ const rawBotHandlers: [RegExp, THandler][] = [
     /\/create_group/,
     (bot) => async (msg) => {
       const chatId = msg.chat.id;
-      const group = await findGroupByCode(String(chatId));
-      if (group) {
-        bot.sendMessage(chatId, texts.group_already_created + group.code);
+      const user = await checkAndGetUser(msg);
+
+      const foundGroup = await findGroupByUserId(user.id);
+      if (foundGroup) {
+        bot.sendMessage(chatId, texts.group_already_created + foundGroup.code);
         return;
       }
-      await createGroup(String(chatId));
-      bot.sendMessage(chatId, `${texts.group_created} ${chatId}`);
+      const group = await createGroup();
+      await addUserToGroup(group.id, user.id);
+      bot.sendMessage(chatId, `${texts.group_created} ${group.code}`);
     },
   ],
   [
@@ -72,15 +85,31 @@ const rawBotHandlers: [RegExp, THandler][] = [
     (bot) => async (msg, match) => {
       const chatId = msg.chat.id;
       const groupCode = checkAndGetArg(match, texts.no_group_code);
-      const user = await checkAndGetUserByUsername(msg);
 
       const group = await findGroupByCode(groupCode);
       if (!group) {
         bot.sendMessage(chatId, texts.group_not_found);
         return;
       }
-      await addUserToGroup(group.id, user.id);
-      bot.sendMessage(chatId, texts.joined_group);
+      const user = await checkAndGetUser(msg);
+      const userGroup = await findGroupByUserId(user.id);
+      if (userGroup) {
+        bot.sendMessage(chatId, texts.already_in_group);
+      } else {
+        await addUserToGroup(group.id, user.id);
+        bot.sendMessage(chatId, texts.joined_group);
+      }
+    },
+  ],
+  [
+    /\/leave_group/,
+    (bot) => async (msg) => {
+      const chatId = msg.chat.id;
+      const user = await checkAndGetUser(msg);
+      const group = await checkAndGetGroup(msg);
+
+      await removeUserFromGroup(group.id, user.id);
+      bot.sendMessage(chatId, texts.left_group);
     },
   ],
   [
@@ -89,7 +118,7 @@ const rawBotHandlers: [RegExp, THandler][] = [
       const chatId = msg.chat.id;
       const movieName = checkAndGetArg(match, texts.no_movie_name);
 
-      const user = await checkAndGetUserByUsername(msg);
+      const user = await checkAndGetUser(msg);
       const group = await checkAndGetGroup(msg);
 
       const movie = await suggestMovie(
@@ -99,10 +128,6 @@ const rawBotHandlers: [RegExp, THandler][] = [
         getKinopoiskUrl(movieName),
         getImdbUrl(movieName),
       );
-      if (!movie) {
-        bot.sendMessage(chatId, texts.movie_not_added);
-        return;
-      }
       bot.sendMessage(
         chatId,
         `${texts.movie_suggested}:\n${getMovieDescription(movie)}`,
@@ -119,7 +144,7 @@ const rawBotHandlers: [RegExp, THandler][] = [
         10,
       );
 
-      const user = await checkAndGetUserByUsername(msg);
+      const user = await checkAndGetUser(msg);
       const group = await checkAndGetGroup(msg);
       const movie = await checkAndGetMovie(movieId, group.id);
 
@@ -193,6 +218,8 @@ const rawBotHandlers: [RegExp, THandler][] = [
   ],
 ];
 
-export const botHandlers = rawBotHandlers.map(
-  ([regexp, handler]) => [regexp, handleCheckErrors(handler)] as const,
-);
+export const botHandlers = applyMiddlewares(rawBotHandlers, [
+  mockData,
+  logger,
+  handleCheckErrors,
+]);

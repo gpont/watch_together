@@ -13,6 +13,7 @@ Telegram bot for selecting movies to watch together.
 - `/help` - Show the list of commands and their descriptions.
 - `/create_group` - Create a new group for group movie watching.
 - `/join_group <code>` - Join an existing group by code.
+- `/leave_group` - Leave current group.
 - `/suggest <movie name>` - Suggest a movie for watching.
 - `/vote <movie number>` - Vote for a suggested movie.
 - `/list` - Show the list of suggested movies.

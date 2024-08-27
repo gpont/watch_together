@@ -4,26 +4,26 @@
 process.env.NTBA_FIX_319 = '1';
 import TelegramBot from 'node-telegram-bot-api';
 import texts from '../texts.json';
-import { CheckError } from '../errorHandler';
+import { CheckError } from '../middlewares/errorHandler';
 import {
-  findGroupByCode,
+  findGroupByUserId,
   findMovieById,
-  findUserByUsername,
+  getUserByUid,
   IGroup,
   IMovie,
   IUser,
   listMovies,
 } from '../models';
 
-export const checkAndGetUserByUsername = async (
+export const checkAndGetUser = async (
   msg: TelegramBot.Message,
 ): Promise<IUser> => {
-  const username = msg.from?.username;
+  const userId = msg.from?.id;
 
-  if (!username) {
+  if (!userId) {
     throw new CheckError(texts.user_not_found);
   }
-  const user = await findUserByUsername(username);
+  const user = await getUserByUid(userId);
   if (!user) {
     throw new CheckError(texts.user_not_found);
   }
@@ -33,8 +33,8 @@ export const checkAndGetUserByUsername = async (
 export const checkAndGetGroup = async (
   msg: TelegramBot.Message,
 ): Promise<IGroup> => {
-  const chatId = msg.chat.id;
-  const group = await findGroupByCode(String(chatId));
+  const user = await checkAndGetUser(msg);
+  const group = await findGroupByUserId(user.id);
 
   if (!group) {
     throw new CheckError(texts.not_in_group);
